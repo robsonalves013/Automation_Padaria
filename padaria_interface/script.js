@@ -27,6 +27,7 @@ const formValorInput = document.getElementById('form-valor');
 const formQuantidadeInput = document.getElementById('form-quantidade');
 
 // Novos elementos para Vendas Delivery
+const plataformaDeliverySelect = document.getElementById('plataforma-delivery');
 const produtoIdDeliveryInput = document.getElementById('produto-id-delivery');
 const produtoQuantidadeDeliveryInput = document.getElementById('produto-quantidade-delivery');
 const lancarSaidaDeliveryBtn = document.getElementById('lancar-saida-delivery');
@@ -193,6 +194,7 @@ async function carregarHistoricoVendasDiarias() {
 
 // Nova função para Lançamento de Vendas Delivery
 async function lancarSaidaDelivery() {
+    const plataforma = plataformaDeliverySelect.value;
     const produtoId = produtoIdDeliveryInput.value.trim();
     const quantidade = parseInt(produtoQuantidadeDeliveryInput.value);
 
@@ -202,6 +204,7 @@ async function lancarSaidaDelivery() {
     }
 
     const saidaData = {
+        plataforma: plataforma,
         id: produtoId,
         quantidade: quantidade
     };
@@ -219,7 +222,7 @@ async function lancarSaidaDelivery() {
             alert(`Saída de estoque lançada com sucesso: ${result.mensagem}`);
             produtoIdDeliveryInput.value = '';
             produtoQuantidadeDeliveryInput.value = 1;
-            visualizarEstoque(); // Atualiza a tabela de estoque
+            visualizarEstoque();
         } else {
             alert(`Erro: ${result.erro}`);
         }

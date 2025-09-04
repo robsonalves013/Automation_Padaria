@@ -19,7 +19,6 @@ def finalizar_venda_balcao():
         return jsonify({'erro': 'O carrinho está vazio.'}), 400
 
     valor_total = 0
-    # Verifica a disponibilidade do estoque antes de processar
     for item in carrinho:
         produto = ProdutoEstoque.query.get(item['id'])
         if not produto or produto.quantidade < item['quantidade']:
@@ -27,24 +26,22 @@ def finalizar_venda_balcao():
 
         valor_total += produto.valor * item['quantidade']
 
-    # Se o estoque for suficiente, processa a venda
     try:
         nova_venda = Venda(
             valor_total=valor_total,
             forma_pagamento=forma_pagamento,
             valor_recebido=valor_recebido,
             data_hora=datetime.now(),
-            tipo_venda='balcao'
+            tipo_venda='balcao',
+            plataforma=None
         )
         db.session.add(nova_venda)
-        db.session.flush()  # Para obter o ID da venda antes do commit
+        db.session.flush()
 
         for item in carrinho:
-            # Diminui a quantidade no estoque
             produto = ProdutoEstoque.query.get(item['id'])
             produto.quantidade -= item['quantidade']
             
-            # Adiciona o item à tabela de itens da venda
             item_venda = VendaItem(
                 venda_id=nova_venda.id,
                 produto_id=item['id'],

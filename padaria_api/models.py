@@ -25,9 +25,9 @@ class Venda(db.Model):
     forma_pagamento = db.Column(db.String(50), nullable=False)
     valor_recebido = db.Column(db.Float, nullable=True)
     data_hora = db.Column(db.DateTime, default=datetime.now)
-    tipo_venda = db.Column(db.String(50), nullable=False) # 'balcao' ou 'delivery'
+    tipo_venda = db.Column(db.String(50), nullable=False)
+    plataforma = db.Column(db.String(50), nullable=True) # NOVA COLUNA
 
-    # Relacionamento com a tabela VendaItem
     itens_vendidos = db.relationship('VendaItem', backref='venda', lazy=True)
 
     def to_dict(self):
@@ -46,7 +46,6 @@ class VendaItem(db.Model):
     produto_id = db.Column(db.String(50), db.ForeignKey('produtos_estoque.id'), nullable=False)
     quantidade = db.Column(db.Integer, nullable=False)
 
-    # Relacionamento com a tabela ProdutoEstoque
     produto = db.relationship('ProdutoEstoque', backref=db.backref('venda_itens', lazy=True))
 
     def to_dict(self):

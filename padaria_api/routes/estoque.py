@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
-from models import db, ProdutoEstoque
+from models import db, ProdutoEstoque, Venda, VendaItem
+from datetime import datetime
 
 estoque_bp = Blueprint('estoque_bp', __name__)
 
@@ -9,7 +10,7 @@ def get_estoque():
     produtos = ProdutoEstoque.query.all()
     lista_produtos = []
     for p in produtos:
-        alerta = p.quantidade <= 10  # Exemplo de lógica de alerta
+        alerta = p.quantidade <= 10
         lista_produtos.append({
             'id': p.id,
             'nome': p.nome,
@@ -63,10 +64,10 @@ def get_alertas_estoque():
 @estoque_bp.route('/estoque/saida', methods=['POST'])
 def lancar_saida_estoque():
     """
-    Lança uma saída de estoque (ex: para vendas delivery).
-    Não registra uma venda, apenas decrementa a quantidade do produto.
+    Lança uma saída de estoque para vendas delivery, registrando a transação.
     """
     data = request.get_json()
+    plataforma = data.get('plataforma')
     produto_id = data.get('id')
     quantidade = data.get('quantidade')
 
@@ -80,7 +81,31 @@ def lancar_saida_estoque():
     if produto.quantidade < quantidade:
         return jsonify({'erro': 'Quantidade insuficiente em estoque.'}), 400
 
-    produto.quantidade -= quantidade
-    db.session.commit()
+    try:
+        nova_venda = Venda(
+            valor_total=0,
+            forma_pagamento=f'Plataforma: {plataforma}',
+            valor_recebido=0,
+            data_hora=datetime.now(),
+            tipo_venda='delivery',
+            plataforma=plataforma
+        )
+        db.session.add(nova_venda)
+        db.session.flush()
 
-    return jsonify({'mensagem': f'Saída de {quantidade} unidades do produto {produto.nome} registrada com sucesso.'})
+        item_venda = VendaItem(
+            venda_id=nova_venda.id,
+            produto_id=produto_id,
+            quantidade=quantidade
+        )
+        db.session.add(item_venda)
+
+        produto.quantidade -= quantidade
+        
+        db.session.commit()
+
+        return jsonify({'mensagem': f'Saída de {quantidade} unidades do produto {produto.nome} para {plataforma} registrada com sucesso.'})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'erro': f'Erro ao processar o lançamento: {str(e)}'}), 500
