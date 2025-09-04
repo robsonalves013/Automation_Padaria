@@ -36,7 +36,7 @@ header {
 }
 
 .logo {
-    max-height: 60px; /* Ajuste o tamanho do seu logo aqui */
+    max-height: 200px; /* Ajuste o tamanho do seu logo aqui */
     width: auto;
     border-radius: 50%; /* Se você quiser um logo circular */
     border: 2px solid var(--background-white);
