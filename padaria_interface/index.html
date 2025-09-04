@@ -48,10 +48,23 @@
         <section id="estoque">
             <h2>Controle de Estoque</h2>
             <div class="estoque-container">
-                <button id="visualizar-estoque" class="btn-secondary">Visualizar Estoque</button>
-                <button id="alerta-estoque" class="btn-secondary">Ver Alertas</button>
-                <div id="tabela-estoque" style="display: none;"></div>
-                <div id="alerta-info" style="display: none;"></div>
+                <div id="form-cadastro">
+                    <h3>Cadastrar / Atualizar Produto</h3>
+                    <form id="estoque-form">
+                        <input type="text" id="form-id" placeholder="Cód. de Barras" required>
+                        <input type="text" id="form-nome" placeholder="Nome do Produto" required>
+                        <input type="number" id="form-valor" placeholder="Valor" step="0.01" required>
+                        <input type="number" id="form-quantidade" placeholder="Quantidade" required>
+                        <button type="submit" class="btn-primary">Salvar Produto</button>
+                    </form>
+                </div>
+
+                <div id="visualizacao-estoque">
+                    <button id="visualizar-estoque" class="btn-secondary">Atualizar Itens do Estoque</button>
+                    <button id="alerta-estoque" class="btn-secondary">Ver Alertas</button>
+                    <div id="tabela-estoque"></div>
+                    <div id="alerta-info" style="display: none;"></div>
+                </div>
             </div>
         </section>
 

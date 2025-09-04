@@ -1,7 +1,7 @@
 // Onde sua API está rodando
-const API_URL = 'http://127.0.0.1:5000/api';
+const API_URL = 'http://127.0.0.1:5000';
 
-// Cache dos elementos do DOM
+// Cache dos elementos do DOM para melhor performance
 const produtoIdInput = document.getElementById('produto-id');
 const produtoQuantidadeInput = document.getElementById('produto-quantidade');
 const adicionarProdutoBtn = document.getElementById('adicionar-produto');
@@ -15,9 +15,22 @@ const tabelaEstoqueDiv = document.getElementById('tabela-estoque');
 const alertaInfoDiv = document.getElementById('alerta-info');
 const relatorioOutputDiv = document.getElementById('relatorio-output');
 
+// Elementos do formulário de estoque
+const estoqueForm = document.getElementById('estoque-form');
+const formIdInput = document.getElementById('form-id');
+const formNomeInput = document.getElementById('form-nome');
+const formValorInput = document.getElementById('form-valor');
+const formQuantidadeInput = document.getElementById('form-quantidade');
+
 let carrinho = [];
 
-// Função para buscar um produto e adicionar ao carrinho
+// Funções de Vendas
+// ---
+
+/**
+ * Adiciona um produto ao carrinho de compras.
+ * Busca os dados do produto na API para garantir a precisão.
+ */
 async function adicionarAoCarrinho() {
     const produtoId = produtoIdInput.value.trim();
     const quantidade = parseInt(produtoQuantidadeInput.value);
@@ -28,11 +41,22 @@ async function adicionarAoCarrinho() {
     }
 
     try {
-        // Simulação: em um sistema real, você buscaria o produto na API para obter o valor e nome
-        // Como o carrinho é local, vamos adicionar com valores simulados.
-        // A API irá validar o estoque.
-        const produto = { id: produtoId, nome: `Produto ${produtoId}`, valor: 5.00, quantidade: quantidade };
-        carrinho.push(produto);
+        const response = await fetch(`${API_URL}/estoque`);
+        const result = await response.json();
+        const produto = result.estoque.find(p => p.id === produtoId);
+
+        if (!produto) {
+            alert('Produto não encontrado no estoque.');
+            return;
+        }
+
+        // Adiciona o produto ao carrinho
+        carrinho.push({
+            id: produto.id,
+            nome: produto.nome,
+            valor: produto.valor,
+            quantidade: quantidade
+        });
         
         atualizarCarrinhoUI();
         produtoIdInput.value = '';
@@ -40,24 +64,30 @@ async function adicionarAoCarrinho() {
         produtoIdInput.focus();
 
     } catch (error) {
-        alert('Erro ao adicionar produto. Verifique o código de barras.');
+        alert('Erro ao buscar produto. Tente novamente.');
+        console.error('Erro:', error);
     }
 }
 
-// Atualiza a interface do carrinho
+/**
+ * Atualiza a interface do carrinho com os itens e o valor total.
+ */
 function atualizarCarrinhoUI() {
     listaCarrinho.innerHTML = '';
     let total = 0;
     carrinho.forEach(item => {
         const li = document.createElement('li');
-        li.textContent = `${item.quantidade}x ${item.nome} - R$ ${(item.quantidade * item.valor).toFixed(2)}`;
+        const valorItem = item.quantidade * item.valor;
+        li.textContent = `${item.quantidade}x ${item.nome} - R$ ${valorItem.toFixed(2)}`;
         listaCarrinho.appendChild(li);
-        total += item.quantidade * item.valor;
+        total += valorItem;
     });
     valorTotalSpan.textContent = total.toFixed(2);
 }
 
-// Lida com a finalização da venda
+/**
+ * Finaliza a venda enviando os dados do carrinho para a API.
+ */
 async function finalizarVenda() {
     if (carrinho.length === 0) {
         alert('O carrinho está vazio.');
@@ -86,51 +116,125 @@ async function finalizarVenda() {
             alert('Venda finalizada com sucesso!');
             carrinho = []; // Limpa o carrinho
             atualizarCarrinhoUI();
+            trocoInfo.style.display = 'none'; // Esconde a mensagem de troco
 
             if (result.troco !== undefined) {
                 trocoInfo.textContent = `Troco: R$ ${result.troco.toFixed(2)}`;
                 trocoInfo.style.display = 'block';
-            } else {
-                trocoInfo.style.display = 'none';
             }
         } else {
             alert(`Erro na venda: ${result.erro}`);
         }
     } catch (error) {
         alert('Erro de comunicação com a API.');
+        console.error('Erro:', error);
     }
 }
 
-// Evento para mostrar/esconder o campo de valor recebido
-formaPagamentoSelect.addEventListener('change', () => {
-    if (formaPagamentoSelect.value === 'Dinheiro') {
-        valorRecebidoInput.style.display = 'block';
-    } else {
-        valorRecebidoInput.style.display = 'none';
-    }
-});
+// Funções de Estoque
+// ---
 
-// Lidar com a visualização do estoque
+/**
+ * Exibe a tabela completa de itens em estoque.
+ */
 async function visualizarEstoque() {
     try {
         const response = await fetch(`${API_URL}/estoque`);
         const result = await response.json();
         const estoque = result.estoque;
 
-        let tabelaHTML = '<table><thead><tr><th>ID</th><th>Nome</th><th>Quantidade</th><th>Valor</th></tr></thead><tbody>';
+        let tabelaHTML = '<table><thead><tr><th>ID</th><th>Nome</th><th>Valor</th><th>Quantidade</th><th>Ações</th></tr></thead><tbody>';
         estoque.forEach(item => {
-            tabelaHTML += `<tr><td>${item.id}</td><td>${item.nome}</td><td>${item.quantidade}</td><td>R$ ${item.valor.toFixed(2)}</td></tr>`;
+            const rowClass = item.alerta_reposicao ? 'class="alerta-linha"' : '';
+            tabelaHTML += `<tr ${rowClass}>
+                <td>${item.id}</td>
+                <td>${item.nome}</td>
+                <td>R$ ${item.valor.toFixed(2)}</td>
+                <td class="${item.alerta_reposicao ? 'alerta' : ''}">${item.quantidade}</td>
+                <td><button class="btn-secondary btn-editar" data-id="${item.id}">Editar</button></td>
+            </tr>`;
         });
         tabelaHTML += '</tbody></table>';
 
         tabelaEstoqueDiv.innerHTML = tabelaHTML;
-        tabelaEstoqueDiv.style.display = 'block';
+
+        // Adiciona evento de clique para os botões de edição
+        document.querySelectorAll('.btn-editar').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const produtoId = btn.dataset.id;
+                preencherFormularioParaEdicao(produtoId);
+            });
+        });
+
     } catch (error) {
         alert('Erro ao carregar estoque.');
+        console.error('Erro:', error);
     }
 }
 
-// Lidar com os alertas de estoque
+/**
+ * Preenche o formulário de estoque com os dados de um produto para edição.
+ * @param {string} produtoId O ID do produto a ser editado.
+ */
+async function preencherFormularioParaEdicao(produtoId) {
+    try {
+        const response = await fetch(`${API_URL}/estoque`);
+        const result = await response.json();
+        const produto = result.estoque.find(p => p.id === produtoId);
+
+        if (produto) {
+            formIdInput.value = produto.id;
+            formNomeInput.value = produto.nome;
+            formValorInput.value = produto.valor;
+            formQuantidadeInput.value = produto.quantidade;
+            formIdInput.disabled = true; // Impede a edição do ID
+            alert('Formulário preenchido! Altere os dados e clique em Salvar para atualizar.');
+        }
+    } catch (error) {
+        alert('Erro ao buscar dados do produto para edição.');
+        console.error('Erro:', error);
+    }
+}
+
+/**
+ * Envia o formulário de cadastro/atualização para a API.
+ */
+async function handleSubmitEstoque(event) {
+    event.preventDefault();
+
+    const produtoData = {
+        id: formIdInput.value,
+        nome: formNomeInput.value,
+        valor: parseFloat(formValorInput.value),
+        quantidade: parseInt(formQuantidadeInput.value)
+    };
+
+    try {
+        const response = await fetch(`${API_URL}/estoque/produto`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(produtoData)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert(`Sucesso: ${result.mensagem}`);
+            estoqueForm.reset();
+            formIdInput.disabled = false; // Habilita o campo de ID
+            visualizarEstoque(); // Atualiza a tabela de estoque
+        } else {
+            alert(`Erro: ${result.erro}`);
+        }
+    } catch (error) {
+        alert('Erro de comunicação com a API.');
+        console.error('Erro:', error);
+    }
+}
+
+/**
+ * Exibe os produtos com estoque abaixo do limite.
+ */
 async function verAlertas() {
     try {
         const response = await fetch(`${API_URL}/estoque/alerta`);
@@ -149,15 +253,22 @@ async function verAlertas() {
             }
             alertaInfoDiv.style.display = 'block';
         } else {
-            alert('Erro ao buscar alertas.');
+            alert(`Erro ao buscar alertas: ${result.erro}`);
         }
 
     } catch (error) {
         alert('Erro de comunicação com a API.');
+        console.error('Erro:', error);
     }
 }
 
-// Lidar com os relatórios
+// Funções de Relatórios
+// ---
+
+/**
+ * Gera e exibe o relatório de vendas de um tipo específico.
+ * @param {string} tipo O tipo de relatório (diario, mensal, etc.).
+ */
 async function gerarRelatorio(tipo) {
     try {
         const response = await fetch(`${API_URL}/relatorios/${tipo}`);
@@ -170,23 +281,36 @@ async function gerarRelatorio(tipo) {
         }
     } catch (error) {
         alert('Erro ao buscar relatórios.');
+        console.error('Erro:', error);
     }
 }
 
-// Adicionar eventos aos botões
+// Adicionar Event Listeners
+// ---
+
+// Vendas
 adicionarProdutoBtn.addEventListener('click', adicionarAoCarrinho);
 finalizarVendaBtn.addEventListener('click', finalizarVenda);
-document.getElementById('visualizar-estoque').addEventListener('click', visualizarEstoque);
-document.getElementById('alerta-estoque').addEventListener('click', verAlertas);
-document.getElementById('relatorio-diario').addEventListener('click', () => gerarRelatorio('diario'));
-document.getElementById('relatorio-mensal').addEventListener('click', () => gerarRelatorio('mensal'));
-document.getElementById('relatorio-geral').addEventListener('click', () => gerarRelatorio('geral'));
-document.getElementById('relatorio-delivery').addEventListener('click', () => gerarRelatorio('delivery'));
-
-// Evento para o botão Enter no input de produto
 produtoIdInput.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
         event.preventDefault();
         adicionarAoCarrinho();
     }
 });
+formaPagamentoSelect.addEventListener('change', () => {
+    valorRecebidoInput.style.display = formaPagamentoSelect.value === 'Dinheiro' ? 'block' : 'none';
+});
+
+// Estoque
+estoqueForm.addEventListener('submit', handleSubmitEstoque);
+document.getElementById('visualizar-estoque').addEventListener('click', visualizarEstoque);
+document.getElementById('alerta-estoque').addEventListener('click', verAlertas);
+
+// Relatórios
+document.getElementById('relatorio-diario').addEventListener('click', () => gerarRelatorio('diario'));
+document.getElementById('relatorio-mensal').addEventListener('click', () => gerarRelatorio('mensal'));
+document.getElementById('relatorio-geral').addEventListener('click', () => gerarRelatorio('geral'));
+document.getElementById('relatorio-delivery').addEventListener('click', () => gerarRelatorio('delivery'));
+
+// Carrega a tabela de estoque ao iniciar a página
+document.addEventListener('DOMContentLoaded', visualizarEstoque);
