@@ -12,8 +12,7 @@ app = Flask(__name__)
 # Carrega as configurações do arquivo config.py
 app.config.from_object(Config)
 
-# Habilita o CORS para toda a aplicação. Isso permite que a interface web
-# se comunique com a API.
+# Habilita o CORS para toda a aplicação.
 CORS(app)
 
 # Inicializa o banco de dados com a aplicação
@@ -24,8 +23,7 @@ app.register_blueprint(estoque_bp, url_prefix='/api')
 app.register_blueprint(vendas_bp, url_prefix='/api')
 app.register_blueprint(relatorios_bp, url_prefix='/api')
 
-# Com o contexto da aplicação, cria as tabelas do banco de dados se elas não existirem.
-# Esta é a forma correta e recomendada em versões mais recentes do Flask.
+# Cria as tabelas do banco de dados se elas não existirem.
 with app.app_context():
     db.create_all()
 
@@ -35,6 +33,4 @@ def home():
     return "API do Sistema de Gestão da Padaria Majurak Online!"
 
 if __name__ == '__main__':
-    # Roda a aplicação em modo de debug para desenvolvimento.
-    # Em produção, a variável de debug deve ser definida como False.
     app.run(debug=True)

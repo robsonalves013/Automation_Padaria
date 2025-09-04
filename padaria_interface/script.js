@@ -26,6 +26,12 @@ const formNomeInput = document.getElementById('form-nome');
 const formValorInput = document.getElementById('form-valor');
 const formQuantidadeInput = document.getElementById('form-quantidade');
 
+// Novos elementos para Vendas Delivery
+const produtoIdDeliveryInput = document.getElementById('produto-id-delivery');
+const produtoQuantidadeDeliveryInput = document.getElementById('produto-quantidade-delivery');
+const lancarSaidaDeliveryBtn = document.getElementById('lancar-saida-delivery');
+
+
 let carrinho = [];
 
 // Funções de Vendas
@@ -178,6 +184,45 @@ async function carregarHistoricoVendasDiarias() {
         historicoVendasDiariasUl.innerHTML = '<li>Erro ao carregar o histórico.</li>';
     }
 }
+
+// Nova função para Lançamento de Vendas Delivery
+async function lancarSaidaDelivery() {
+    const produtoId = produtoIdDeliveryInput.value.trim();
+    const quantidade = parseInt(produtoQuantidadeDeliveryInput.value);
+
+    if (!produtoId || quantidade < 1) {
+        alert('Por favor, insira um código de produto e uma quantidade válida.');
+        return;
+    }
+
+    const saidaData = {
+        id: produtoId,
+        quantidade: quantidade
+    };
+
+    try {
+        const response = await fetch(`${API_URL}/estoque/saida`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(saidaData)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert(`Saída de estoque lançada com sucesso: ${result.mensagem}`);
+            produtoIdDeliveryInput.value = '';
+            produtoQuantidadeDeliveryInput.value = 1;
+            visualizarEstoque(); // Atualiza a tabela de estoque
+        } else {
+            alert(`Erro: ${result.erro}`);
+        }
+    } catch (error) {
+        alert('Erro de comunicação com a API.');
+        console.error('Erro:', error);
+    }
+}
+
 
 // Funções de Estoque
 // ---
@@ -337,6 +382,13 @@ document.getElementById('relatorio-diario').addEventListener('click', () => gera
 document.getElementById('relatorio-mensal').addEventListener('click', () => gerarRelatorio('mensal'));
 document.getElementById('relatorio-geral').addEventListener('click', () => gerarRelatorio('geral'));
 document.getElementById('relatorio-delivery').addEventListener('click', () => gerarRelatorio('delivery'));
+lancarSaidaDeliveryBtn.addEventListener('click', lancarSaidaDelivery);
+produtoIdDeliveryInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        lancarSaidaDelivery();
+    }
+});
 
 // Carrega as tabelas de estoque e histórico de vendas ao iniciar a página
 document.addEventListener('DOMContentLoaded', () => {
