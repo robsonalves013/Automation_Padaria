@@ -12,11 +12,11 @@ class Config:
     # Senha mestre para operações críticas
     MASTER_PASSWORD = '120724'
 
-    # Configurações de E-mail
-    MAIL_SERVER = 'smtp.gmail.com'  # Exemplo para o Gmail
+    # Configurações de E-mail para OUTLOOK
+    MAIL_SERVER = 'smtp.office365.com'  # Servidor SMTP para contas da Microsoft
     MAIL_PORT = 587
     MAIL_USE_TLS = True
-    MAIL_USERNAME = 'seu_email@gmail.com'
-    MAIL_PASSWORD = 'sua_senha_de_app' # Use uma senha de aplicativo se for Gmail ou outro provedor
-    MAIL_SENDER = 'seu_email@gmail.com'
-    MAIL_RECEIVER = 'email_do_destinatario@exemplo.com'
+    MAIL_USERNAME = 'robtechservice@outlook.com'
+    MAIL_PASSWORD = 'ioohmnnkugrsulss' # A senha de aplicativo é obrigatória para maior segurança
+    MAIL_SENDER = 'robtechservice@outlook.com'
+    MAIL_RECEIVER = 'padariamajurak@gmail.com'
