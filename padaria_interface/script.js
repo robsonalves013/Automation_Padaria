@@ -1,5 +1,5 @@
 // Onde sua API está rodando
-const API_URL = 'http://127.0.0.1:5000';
+const API_URL = 'http://127.0.0.1:5000/api';
 
 // Cache dos elementos do DOM para melhor performance
 const produtoIdInput = document.getElementById('produto-id');
