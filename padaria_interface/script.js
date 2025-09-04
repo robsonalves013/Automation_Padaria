@@ -155,6 +155,11 @@ async function finalizarVenda() {
 async function carregarHistoricoVendasDiarias() {
     try {
         const response = await fetch(`${API_URL}/relatorios/diario`);
+        
+        if (!response.ok) {
+            throw new Error(`Erro de rede: ${response.status} ${response.statusText}`);
+        }
+
         const result = await response.json();
         
         historicoVendasDiariasUl.innerHTML = '';
@@ -182,6 +187,7 @@ async function carregarHistoricoVendasDiarias() {
     } catch (error) {
         console.error('Erro ao carregar histórico de vendas:', error);
         historicoVendasDiariasUl.innerHTML = '<li>Erro ao carregar o histórico.</li>';
+        valorFechamentoCaixaSpan.textContent = '0.00';
     }
 }
 
