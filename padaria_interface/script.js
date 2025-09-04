@@ -22,6 +22,10 @@ const formNomeInput = document.getElementById('form-nome');
 const formValorInput = document.getElementById('form-valor');
 const formQuantidadeInput = document.getElementById('form-quantidade');
 
+// NOVOS ELEMENTOS para o histórico de vendas
+const historicoVendasDiariasUl = document.getElementById('historico-vendas-diarias');
+const valorFechamentoCaixaSpan = document.getElementById('valor-fechamento-caixa');
+
 let carrinho = [];
 
 // Funções de Vendas
@@ -83,6 +87,31 @@ function atualizarCarrinhoUI() {
         total += valorItem;
     });
     valorTotalSpan.textContent = total.toFixed(2);
+
+    // Adiciona a lógica do troco
+    calcularTroco();
+}
+
+/**
+ * Calcula e exibe o troco antes da venda ser finalizada.
+ */
+function calcularTroco() {
+    const totalVenda = parseFloat(valorTotalSpan.textContent);
+    const formaPagamento = formaPagamentoSelect.value;
+    const valorRecebido = parseFloat(valorRecebidoInput.value) || 0;
+
+    if (formaPagamento === 'Dinheiro') {
+        if (valorRecebido >= totalVenda) {
+            const troco = valorRecebido - totalVenda;
+            trocoInfo.textContent = `Troco: R$ ${troco.toFixed(2)}`;
+            trocoInfo.style.display = 'block';
+        } else {
+            trocoInfo.textContent = `Faltam R$ ${(totalVenda - valorRecebido).toFixed(2)}`;
+            trocoInfo.style.display = 'block';
+        }
+    } else {
+        trocoInfo.style.display = 'none';
+    }
 }
 
 /**
@@ -96,6 +125,12 @@ async function finalizarVenda() {
 
     const formaPagamento = formaPagamentoSelect.value;
     const valorRecebido = parseFloat(valorRecebidoInput.value) || 0;
+    const totalVenda = parseFloat(valorTotalSpan.textContent);
+
+    if (formaPagamento === 'Dinheiro' && valorRecebido < totalVenda) {
+        alert('O valor recebido é menor que o valor total da venda. A venda não pode ser finalizada.');
+        return;
+    }
 
     const vendaData = {
         carrinho: carrinho.map(item => ({ id: item.id, quantidade: item.quantidade })),
@@ -117,17 +152,53 @@ async function finalizarVenda() {
             carrinho = []; // Limpa o carrinho
             atualizarCarrinhoUI();
             trocoInfo.style.display = 'none'; // Esconde a mensagem de troco
+            
+            // Recarrega o histórico de vendas para mostrar a nova venda
+            carregarHistoricoVendasDiarias();
 
-            if (result.troco !== undefined) {
-                trocoInfo.textContent = `Troco: R$ ${result.troco.toFixed(2)}`;
-                trocoInfo.style.display = 'block';
-            }
         } else {
             alert(`Erro na venda: ${result.erro}`);
         }
     } catch (error) {
         alert('Erro de comunicação com a API.');
         console.error('Erro:', error);
+    }
+}
+
+/**
+ * Carrega e exibe o histórico de vendas diárias.
+ */
+async function carregarHistoricoVendasDiarias() {
+    try {
+        const response = await fetch(`${API_URL}/relatorios/diario`);
+        const result = await response.json();
+        
+        historicoVendasDiariasUl.innerHTML = '';
+        let totalDiario = 0;
+
+        if (result.vendas && result.vendas.length > 0) {
+            result.vendas.forEach(venda => {
+                const li = document.createElement('li');
+                const valorTotal = venda.valor_total.toFixed(2);
+                const hora = new Date(venda.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                
+                // Formata os itens da venda
+                const itensVenda = venda.itens_vendidos.map(item => `${item.quantidade}x ${item.nome}`).join(', ');
+
+                li.innerHTML = `<strong>[${hora}]</strong> Venda #${venda.id} - R$ ${valorTotal} <br> <em>Itens: ${itensVenda}</em>`;
+                historicoVendasDiariasUl.appendChild(li);
+                
+                totalDiario += venda.valor_total;
+            });
+        } else {
+            historicoVendasDiariasUl.innerHTML = '<li>Nenhuma venda registrada hoje.</li>';
+        }
+
+        valorFechamentoCaixaSpan.textContent = totalDiario.toFixed(2);
+
+    } catch (error) {
+        console.error('Erro ao carregar histórico de vendas:', error);
+        historicoVendasDiariasUl.innerHTML = '<li>Erro ao carregar o histórico.</li>';
     }
 }
 
@@ -299,7 +370,10 @@ produtoIdInput.addEventListener('keydown', (event) => {
 });
 formaPagamentoSelect.addEventListener('change', () => {
     valorRecebidoInput.style.display = formaPagamentoSelect.value === 'Dinheiro' ? 'block' : 'none';
+    calcularTroco();
 });
+valorRecebidoInput.addEventListener('input', calcularTroco);
+
 
 // Estoque
 estoqueForm.addEventListener('submit', handleSubmitEstoque);
@@ -312,5 +386,8 @@ document.getElementById('relatorio-mensal').addEventListener('click', () => gera
 document.getElementById('relatorio-geral').addEventListener('click', () => gerarRelatorio('geral'));
 document.getElementById('relatorio-delivery').addEventListener('click', () => gerarRelatorio('delivery'));
 
-// Carrega a tabela de estoque ao iniciar a página
-document.addEventListener('DOMContentLoaded', visualizarEstoque);
+// Carrega as tabelas de estoque e histórico de vendas ao iniciar a página
+document.addEventListener('DOMContentLoaded', () => {
+    visualizarEstoque();
+    carregarHistoricoVendasDiarias();
+});
