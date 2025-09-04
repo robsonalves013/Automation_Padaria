@@ -3,12 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Gerenciamento da Padaria</title>
+    <title>Sistema de Gestão da Padaria Majurak</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
-        <h1>Sistema da Padaria Majurak</h1>
+        <div class="header-content">
+            <img src="images/logo.png" alt="Logo Padaria Majurak" class="logo">
+            <h1>Sistema de Gestão da Padaria Majurak</h1>
+        </div>
     </header>
 
     <main>
@@ -23,7 +26,7 @@
                 <div class="venda-inputs">
                     <input type="text" id="produto-id" placeholder="Cód. de Barras" autofocus>
                     <input type="number" id="produto-quantidade" placeholder="Qtd" value="1" min="1">
-                    <button id="adicionar-produto">Adicionar ao Carrinho</button>
+                    <button id="adicionar-produto" class="btn-primary">Adicionar ao Carrinho</button>
                     
                     <div class="pagamento">
                         <select id="forma-pagamento">
@@ -33,7 +36,7 @@
                             <option value="Dinheiro">Dinheiro</option>
                         </select>
                         <input type="number" id="valor-recebido" placeholder="Valor Recebido (Dinheiro)" style="display: none;">
-                        <button id="finalizar-venda">Finalizar Venda</button>
+                        <button id="finalizar-venda" class="btn-primary">Finalizar Venda</button>
                     </div>
                     <div id="troco-info" style="display: none;"></div>
                 </div>
@@ -45,8 +48,8 @@
         <section id="estoque">
             <h2>Controle de Estoque</h2>
             <div class="estoque-container">
-                <button id="visualizar-estoque">Visualizar Estoque</button>
-                <button id="alerta-estoque">Ver Alertas</button>
+                <button id="visualizar-estoque" class="btn-secondary">Visualizar Estoque</button>
+                <button id="alerta-estoque" class="btn-secondary">Ver Alertas</button>
                 <div id="tabela-estoque" style="display: none;"></div>
                 <div id="alerta-info" style="display: none;"></div>
             </div>
@@ -57,10 +60,10 @@
         <section id="relatorios">
             <h2>Relatórios</h2>
             <div class="relatorios-container">
-                <button id="relatorio-diario">Vendas Diárias</button>
-                <button id="relatorio-mensal">Vendas Mensais</button>
-                <button id="relatorio-geral">Vendas Gerais</button>
-                <button id="relatorio-delivery">Vendas Delivery</button>
+                <button id="relatorio-diario" class="btn-secondary">Vendas Diárias</button>
+                <button id="relatorio-mensal" class="btn-secondary">Vendas Mensais</button>
+                <button id="relatorio-geral" class="btn-secondary">Vendas Gerais</button>
+                <button id="relatorio-delivery" class="btn-secondary">Vendas Delivery</button>
                 <div id="relatorio-output"></div>
             </div>
         </section>

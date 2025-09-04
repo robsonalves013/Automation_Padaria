@@ -1,3 +1,4 @@
+# app.py
 from flask import Flask
 from models import db
 from config import Config
@@ -16,9 +17,10 @@ app.register_blueprint(estoque_bp, url_prefix='/api')
 app.register_blueprint(vendas_bp, url_prefix='/api')
 app.register_blueprint(relatorios_bp, url_prefix='/api')
 
-# Rota para criar o banco de dados e as tabelas
-@app.before_first_request
-def create_tables():
+# ---
+# A forma correta de criar as tabelas no Flask 2.0+
+# Este bloco cria as tabelas assim que o app é executado
+with app.app_context():
     db.create_all()
 
 @app.route('/')
