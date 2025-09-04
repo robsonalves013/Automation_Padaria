@@ -2,6 +2,8 @@ from flask import Blueprint, jsonify
 from models import Venda, ItemVenda, Produto
 from datetime import date, timedelta
 import pandas as pd
+from utils.email_sender import send_email
+from config import Config
 
 relatorios_bp = Blueprint('relatorios', __name__)
 
@@ -106,3 +108,36 @@ def relatorio_delivery():
         "itens_por_plataforma": total_por_plataforma,
         "total_itens_delivery": int(df['quantidade'].sum())
     }), 200
+    
+@relatorios_bp.route('/relatorios/diario/email', methods=['GET'])
+def enviar_relatorio_diario_por_email():
+    df = get_vendas_df('diario')
+    if df.empty:
+        subject = "Relatório Diário de Vendas - Nenhum Movimento"
+        body = "Nenhuma venda foi registrada hoje."
+        send_email(subject, body, Config.MAIL_RECEIVER)
+        return jsonify({"mensagem": "Nenhuma venda registrada hoje. E-mail enviado."}), 200
+
+    total_por_pagamento = df.groupby('forma_pagamento')['valor_total_item'].sum().to_dict()
+    total_geral = df['valor_total_item'].sum()
+    
+    # Formata o corpo do e-mail
+    body = f"""
+Relatório de Vendas Diário - {date.today()}
+
+Detalhes das Vendas:
+{df[['id_venda', 'hora', 'produto', 'quantidade', 'valor_total_item']].to_string(index=False)}
+
+---
+Total por Forma de Pagamento:
+{pd.DataFrame([total_por_pagamento]).to_string(index=False)}
+
+---
+Valor Total do Dia: R$ {total_geral:.2f}
+"""
+
+    subject = f"Relatório Diário de Vendas - {date.today()}"
+    if send_email(subject, body, Config.MAIL_RECEIVER):
+        return jsonify({"mensagem": "Relatório diário enviado com sucesso por e-mail!"}), 200
+    else:
+        return jsonify({"erro": "Falha ao enviar o e-mail."}), 500

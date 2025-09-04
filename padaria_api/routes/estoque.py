@@ -1,5 +1,7 @@
 from flask import Blueprint, jsonify, request
 from models import db, Produto
+from utils.email_sender import send_email
+from config import Config
 
 estoque_bp = Blueprint('estoque', __name__)
 
@@ -62,3 +64,28 @@ def alerta_estoque():
         return jsonify({"mensagem": "Nenhum produto com estoque baixo."}), 200
     
     return jsonify({"alerta": "Produtos com menos de 10 unidades em estoque", "produtos": lista_alerta}), 200
+
+@estoque_bp.route('/estoque/alerta/email', methods=['GET'])
+def enviar_alerta_estoque_por_email():
+    produtos_alerta = Produto.query.filter(Produto.quantidade < 10).all()
+    
+    if not produtos_alerta:
+        subject = "Alerta de Estoque - Nenhuma Reposição Necessária"
+        body = "Parabéns! Nenhum produto está com estoque baixo (<10 unidades)."
+        send_email(subject, body, Config.MAIL_RECEIVER)
+        return jsonify({"mensagem": "Nenhum produto com estoque baixo. E-mail enviado."}), 200
+
+    produtos_info = [f"- {p.nome} (ID: {p.id}): {p.quantidade} unidades" for p in produtos_alerta]
+    body = f"""
+Alerta de Estoque Baixo!
+
+Os seguintes produtos precisam de reposição imediata:
+
+{'\n'.join(produtos_info)}
+"""
+    
+    subject = "⚠️ Alerta de Reposição de Estoque"
+    if send_email(subject, body, Config.MAIL_RECEIVER):
+        return jsonify({"mensagem": "Alerta de estoque enviado com sucesso por e-mail!"}), 200
+    else:
+        return jsonify({"erro": "Falha ao enviar o e-mail."}), 500
