@@ -15,6 +15,10 @@ const tabelaEstoqueDiv = document.getElementById('tabela-estoque');
 const alertaInfoDiv = document.getElementById('alerta-info');
 const relatorioOutputDiv = document.getElementById('relatorio-output');
 
+// NOVOS ELEMENTOS para o histórico de vendas
+const historicoVendasDiariasUl = document.getElementById('historico-vendas-diarias');
+const valorFechamentoCaixaSpan = document.getElementById('valor-fechamento-caixa');
+
 // Elementos do formulário de estoque
 const estoqueForm = document.getElementById('estoque-form');
 const formIdInput = document.getElementById('form-id');
@@ -22,19 +26,11 @@ const formNomeInput = document.getElementById('form-nome');
 const formValorInput = document.getElementById('form-valor');
 const formQuantidadeInput = document.getElementById('form-quantidade');
 
-// NOVOS ELEMENTOS para o histórico de vendas
-const historicoVendasDiariasUl = document.getElementById('historico-vendas-diarias');
-const valorFechamentoCaixaSpan = document.getElementById('valor-fechamento-caixa');
-
 let carrinho = [];
 
 // Funções de Vendas
 // ---
 
-/**
- * Adiciona um produto ao carrinho de compras.
- * Busca os dados do produto na API para garantir a precisão.
- */
 async function adicionarAoCarrinho() {
     const produtoId = produtoIdInput.value.trim();
     const quantidade = parseInt(produtoQuantidadeInput.value);
@@ -54,7 +50,6 @@ async function adicionarAoCarrinho() {
             return;
         }
 
-        // Adiciona o produto ao carrinho
         carrinho.push({
             id: produto.id,
             nome: produto.nome,
@@ -73,9 +68,6 @@ async function adicionarAoCarrinho() {
     }
 }
 
-/**
- * Atualiza a interface do carrinho com os itens e o valor total.
- */
 function atualizarCarrinhoUI() {
     listaCarrinho.innerHTML = '';
     let total = 0;
@@ -87,14 +79,9 @@ function atualizarCarrinhoUI() {
         total += valorItem;
     });
     valorTotalSpan.textContent = total.toFixed(2);
-
-    // Adiciona a lógica do troco
     calcularTroco();
 }
 
-/**
- * Calcula e exibe o troco antes da venda ser finalizada.
- */
 function calcularTroco() {
     const totalVenda = parseFloat(valorTotalSpan.textContent);
     const formaPagamento = formaPagamentoSelect.value;
@@ -114,9 +101,6 @@ function calcularTroco() {
     }
 }
 
-/**
- * Finaliza a venda enviando os dados do carrinho para a API.
- */
 async function finalizarVenda() {
     if (carrinho.length === 0) {
         alert('O carrinho está vazio.');
@@ -149,13 +133,10 @@ async function finalizarVenda() {
 
         if (response.ok) {
             alert('Venda finalizada com sucesso!');
-            carrinho = []; // Limpa o carrinho
+            carrinho = [];
             atualizarCarrinhoUI();
-            trocoInfo.style.display = 'none'; // Esconde a mensagem de troco
-            
-            // Recarrega o histórico de vendas para mostrar a nova venda
+            trocoInfo.style.display = 'none';
             carregarHistoricoVendasDiarias();
-
         } else {
             alert(`Erro na venda: ${result.erro}`);
         }
@@ -165,9 +146,6 @@ async function finalizarVenda() {
     }
 }
 
-/**
- * Carrega e exibe o histórico de vendas diárias.
- */
 async function carregarHistoricoVendasDiarias() {
     try {
         const response = await fetch(`${API_URL}/relatorios/diario`);
@@ -182,7 +160,6 @@ async function carregarHistoricoVendasDiarias() {
                 const valorTotal = venda.valor_total.toFixed(2);
                 const hora = new Date(venda.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
                 
-                // Formata os itens da venda
                 const itensVenda = venda.itens_vendidos.map(item => `${item.quantidade}x ${item.nome}`).join(', ');
 
                 li.innerHTML = `<strong>[${hora}]</strong> Venda #${venda.id} - R$ ${valorTotal} <br> <em>Itens: ${itensVenda}</em>`;
@@ -205,9 +182,6 @@ async function carregarHistoricoVendasDiarias() {
 // Funções de Estoque
 // ---
 
-/**
- * Exibe a tabela completa de itens em estoque.
- */
 async function visualizarEstoque() {
     try {
         const response = await fetch(`${API_URL}/estoque`);
@@ -229,7 +203,6 @@ async function visualizarEstoque() {
 
         tabelaEstoqueDiv.innerHTML = tabelaHTML;
 
-        // Adiciona evento de clique para os botões de edição
         document.querySelectorAll('.btn-editar').forEach(btn => {
             btn.addEventListener('click', () => {
                 const produtoId = btn.dataset.id;
@@ -243,10 +216,6 @@ async function visualizarEstoque() {
     }
 }
 
-/**
- * Preenche o formulário de estoque com os dados de um produto para edição.
- * @param {string} produtoId O ID do produto a ser editado.
- */
 async function preencherFormularioParaEdicao(produtoId) {
     try {
         const response = await fetch(`${API_URL}/estoque`);
@@ -258,7 +227,7 @@ async function preencherFormularioParaEdicao(produtoId) {
             formNomeInput.value = produto.nome;
             formValorInput.value = produto.valor;
             formQuantidadeInput.value = produto.quantidade;
-            formIdInput.disabled = true; // Impede a edição do ID
+            formIdInput.disabled = true;
             alert('Formulário preenchido! Altere os dados e clique em Salvar para atualizar.');
         }
     } catch (error) {
@@ -267,9 +236,6 @@ async function preencherFormularioParaEdicao(produtoId) {
     }
 }
 
-/**
- * Envia o formulário de cadastro/atualização para a API.
- */
 async function handleSubmitEstoque(event) {
     event.preventDefault();
 
@@ -292,8 +258,8 @@ async function handleSubmitEstoque(event) {
         if (response.ok) {
             alert(`Sucesso: ${result.mensagem}`);
             estoqueForm.reset();
-            formIdInput.disabled = false; // Habilita o campo de ID
-            visualizarEstoque(); // Atualiza a tabela de estoque
+            formIdInput.disabled = false;
+            visualizarEstoque();
         } else {
             alert(`Erro: ${result.erro}`);
         }
@@ -303,9 +269,6 @@ async function handleSubmitEstoque(event) {
     }
 }
 
-/**
- * Exibe os produtos com estoque abaixo do limite.
- */
 async function verAlertas() {
     try {
         const response = await fetch(`${API_URL}/estoque/alerta`);
@@ -336,10 +299,6 @@ async function verAlertas() {
 // Funções de Relatórios
 // ---
 
-/**
- * Gera e exibe o relatório de vendas de um tipo específico.
- * @param {string} tipo O tipo de relatório (diario, mensal, etc.).
- */
 async function gerarRelatorio(tipo) {
     try {
         const response = await fetch(`${API_URL}/relatorios/${tipo}`);
@@ -358,8 +317,6 @@ async function gerarRelatorio(tipo) {
 
 // Adicionar Event Listeners
 // ---
-
-// Vendas
 adicionarProdutoBtn.addEventListener('click', adicionarAoCarrinho);
 finalizarVendaBtn.addEventListener('click', finalizarVenda);
 produtoIdInput.addEventListener('keydown', (event) => {
@@ -373,14 +330,9 @@ formaPagamentoSelect.addEventListener('change', () => {
     calcularTroco();
 });
 valorRecebidoInput.addEventListener('input', calcularTroco);
-
-
-// Estoque
 estoqueForm.addEventListener('submit', handleSubmitEstoque);
 document.getElementById('visualizar-estoque').addEventListener('click', visualizarEstoque);
 document.getElementById('alerta-estoque').addEventListener('click', verAlertas);
-
-// Relatórios
 document.getElementById('relatorio-diario').addEventListener('click', () => gerarRelatorio('diario'));
 document.getElementById('relatorio-mensal').addEventListener('click', () => gerarRelatorio('mensal'));
 document.getElementById('relatorio-geral').addEventListener('click', () => gerarRelatorio('geral'));

@@ -13,7 +13,7 @@ app = Flask(__name__)
 app.config.from_object(Config)
 
 # Habilita o CORS para toda a aplicação. Isso permite que a interface web
-# (que roda em um "origem" diferente) se comunique com a API.
+# se comunique com a API.
 CORS(app)
 
 # Inicializa o banco de dados com a aplicação
