@@ -2,6 +2,7 @@ from flask import Flask, render_template
 from flask_cors import CORS
 from config import Config
 from extensions import db
+from models import ProdutoEstoque, Venda, VendaItem
 from routes.vendas_bp import vendas_bp
 from routes.estoque_bp import estoque_bp
 from routes.relatorios_bp import relatorios_bp
@@ -23,5 +24,6 @@ def index():
 
 if __name__ == '__main__':
     with app.app_context():
+        # Cria as tabelas do banco de dados se elas não existirem
         db.create_all()
     app.run(debug=True)

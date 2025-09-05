@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from extensions import db
+from models import Venda, VendaItem, ProdutoEstoque
 from datetime import datetime, date, timedelta
 import pytz
 import smtplib
@@ -33,47 +34,81 @@ def formatar_venda(venda):
 
 def get_vendas_diarias():
     hoje = datetime.now(fuso_horario_sp).date()
-    vendas = Venda.query.filter(db.func.date(Venda.data_hora) == hoje).order_by(Venda.data_hora.asc()).all()
-    return {'vendas': [formatar_venda(v) for v in vendas], 'mensagem': 'Nenhuma venda registrada hoje.'}
+    vendas_hoje = Venda.query.filter(
+        db.func.date(Venda.data_hora) == hoje,
+        Venda.status != 'cancelada'
+    ).order_by(Venda.data_hora.desc()).all()
+    
+    if not vendas_hoje:
+        return {'mensagem': 'Nenhuma venda registrada hoje.', 'vendas': []}
+    
+    vendas_formatadas = [formatar_venda(v) for v in vendas_hoje]
+    return {'mensagem': 'Relatório de vendas diárias gerado com sucesso.', 'vendas': vendas_formatadas}
 
 def get_vendas_mensais():
-    primeiro_dia_mes = datetime.now(fuso_horario_sp).replace(day=1).date()
-    vendas = Venda.query.filter(db.func.date(Venda.data_hora) >= primeiro_dia_mes).order_by(Venda.data_hora.asc()).all()
-    return {'vendas': [formatar_venda(v) for v in vendas], 'mensagem': 'Nenhuma venda registrada este mês.'}
+    hoje = datetime.now(fuso_horario_sp)
+    inicio_mes = hoje.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    
+    vendas_mes = Venda.query.filter(
+        Venda.data_hora >= inicio_mes,
+        Venda.status != 'cancelada'
+    ).order_by(Venda.data_hora.desc()).all()
+    
+    if not vendas_mes:
+        return {'mensagem': 'Nenhuma venda registrada este mês.', 'vendas': []}
+        
+    vendas_formatadas = [formatar_venda(v) for v in vendas_mes]
+    return {'mensagem': 'Relatório de vendas mensais gerado com sucesso.', 'vendas': vendas_formatadas}
 
 def get_vendas_gerais():
-    vendas = Venda.query.order_by(Venda.data_hora.desc()).all()
-    return {'vendas': [formatar_venda(v) for v in vendas], 'mensagem': 'Nenhuma venda registrada.'}
+    vendas = Venda.query.filter(Venda.status != 'cancelada').order_by(Venda.data_hora.desc()).all()
+    if not vendas:
+        return {'mensagem': 'Nenhuma venda registrada no sistema.', 'vendas': []}
+
+    vendas_formatadas = [formatar_venda(v) for v in vendas]
+    return {'mensagem': 'Relatório de vendas geral gerado com sucesso.', 'vendas': vendas_formatadas}
 
 def get_vendas_delivery():
-    vendas = Venda.query.filter_by(tipo_venda='delivery').order_by(Venda.data_hora.desc()).all()
-    return {'vendas': [formatar_venda(v) for v in vendas], 'mensagem': 'Nenhuma venda delivery registrada.'}
+    vendas_delivery = Venda.query.filter(
+        Venda.tipo_venda == 'delivery',
+        Venda.status != 'cancelada'
+    ).order_by(Venda.data_hora.desc()).all()
+
+    if not vendas_delivery:
+        return {'mensagem': 'Nenhuma venda de delivery registrada.', 'vendas': []}
+    
+    vendas_formatadas = [formatar_venda(v) for v in vendas_delivery]
+    return {'mensagem': 'Relatório de vendas de delivery gerado com sucesso.', 'vendas': vendas_formatadas}
 
 
 @relatorios_bp.route('/relatorios/diario', methods=['GET'])
 def relatorio_diario():
-    return jsonify(get_vendas_diarias())
+    relatorio = get_vendas_diarias()
+    return jsonify(relatorio)
 
 @relatorios_bp.route('/relatorios/mensal', methods=['GET'])
 def relatorio_mensal():
-    return jsonify(get_vendas_mensais())
+    relatorio = get_vendas_mensais()
+    return jsonify(relatorio)
 
 @relatorios_bp.route('/relatorios/geral', methods=['GET'])
 def relatorio_geral():
-    return jsonify(get_vendas_gerais())
+    relatorio = get_vendas_gerais()
+    return jsonify(relatorio)
 
 @relatorios_bp.route('/relatorios/delivery', methods=['GET'])
 def relatorio_delivery():
-    return jsonify(get_vendas_delivery())
+    relatorio = get_vendas_delivery()
+    return jsonify(relatorio)
 
 @relatorios_bp.route('/relatorios/enviar-email', methods=['POST'])
-def enviar_relatorio_email():
+def enviar_relatorio_por_email():
     data = request.get_json()
-    email_destinatario = data.get('email')
-    tipo_relatorio = data.get('tipo_relatorio')
+    email_destinatario = data.get('email_destinatario')
+    tipo_relatorio = 'geral' # Envia o relatório geral por padrão
 
-    if not email_destinatario or not tipo_relatorio:
-        return jsonify({'erro': 'Dados insuficientes.'}), 400
+    if not email_destinatario:
+        return jsonify({'erro': 'Email do destinatário é obrigatório.'}), 400
 
     relatorio_geradores = {
         'diario': get_vendas_diarias,
@@ -110,6 +145,7 @@ def enviar_relatorio_email():
         server.sendmail(Config.EMAIL_HOST_USER, email_destinatario, text)
         server.quit()
 
-        return jsonify({'mensagem': 'Relatório enviado com sucesso!'}), 200
+        return jsonify({'mensagem': f'Relatório de vendas {tipo_relatorio} enviado para {email_destinatario}.'})
     except Exception as e:
-        return jsonify({'erro': f'Erro ao enviar e-mail: {str(e)}'}), 500
+        print(f"Erro ao enviar email: {e}")
+        return jsonify({'erro': 'Não foi possível enviar o e-mail. Verifique as configurações.'}), 500

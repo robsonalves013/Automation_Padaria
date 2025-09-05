@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from extensions import db
+from models import ProdutoEstoque
 
 estoque_bp = Blueprint('estoque_bp', __name__)
 
@@ -21,6 +22,9 @@ def add_or_update_produto():
     data = request.get_json()
     produto_id = data.get('id')
     
+    if not produto_id:
+        return jsonify({'erro': 'ID do produto é obrigatório.'}), 400
+
     produto = ProdutoEstoque.query.get(produto_id)
     if produto:
         # Atualiza o produto existente
@@ -47,7 +51,21 @@ def get_alertas():
     """Retorna produtos com estoque baixo (ex: <= 10 unidades)."""
     produtos_alerta = ProdutoEstoque.query.filter(ProdutoEstoque.quantidade <= 10).all()
     if not produtos_alerta:
-        return jsonify({'mensagem': 'Nenhum produto com estoque baixo.', 'produtos': []})
+        return jsonify({'mensagem': 'Nenhum produto com estoque baixo.', 'produtos_alerta': []}), 200
+
+    return jsonify({'produtos_alerta': [p.to_dict() for p in produtos_alerta]})
+
+@estoque_bp.route('/estoque/produto/<string:produto_id>', methods=['DELETE'])
+def delete_produto(produto_id):
+    """Deleta um produto do estoque."""
+    produto = ProdutoEstoque.query.get(produto_id)
+    if not produto:
+        return jsonify({'erro': 'Produto não encontrado.'}), 404
     
-    lista_produtos = [p.to_dict() for p in produtos_alerta]
-    return jsonify({'mensagem': f'{len(lista_produtos)} produto(s) com estoque baixo.', 'produtos': lista_produtos})
+    try:
+        db.session.delete(produto)
+        db.session.commit()
+        return jsonify({'mensagem': f'Produto {produto.nome} removido do estoque.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'erro': str(e)}), 500

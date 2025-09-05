@@ -52,13 +52,3 @@ class VendaItem(db.Model):
     venda_id = db.Column(db.Integer, db.ForeignKey('venda.id'), nullable=False)
     produto_id = db.Column(db.String(50), db.ForeignKey('produto_estoque.id'), nullable=False)
     quantidade = db.Column(db.Integer, nullable=False)
-    
-    produto = db.relationship('ProdutoEstoque', backref='venda_itens')
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'venda_id': self.venda_id,
-            'produto_id': self.produto_id,
-            'quantidade': self.quantidade
-        }
