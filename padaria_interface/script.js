@@ -310,5 +310,63 @@ function abrirModalSenha(vendaId) {
     // Adiciona o novo listener com o vendaId correto
     newConfirmBtn.addEventListener('click', async () => {
         const senhaMestre = senhaInput.value;
-        if (senhaMestre) {
-            fecharModalSenha();
+        if (!senhaMestre) {
+            alert('Por favor, digite a senha mestre.');
+            return;
+        }
+
+        const motivo = prompt('Por favor, digite o motivo do cancelamento:');
+        if (!motivo) {
+            alert('Cancelamento abortado. O motivo é obrigatório.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/vendas/cancelar/${vendaId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    senha: senhaMestre,
+                    motivo: motivo
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                alert('Venda cancelada com sucesso!');
+                carregarHistoricoVendasDiarias();
+            } else {
+                alert(`Erro ao cancelar a venda: ${result.erro}`);
+            }
+        } catch (error) {
+            alert('Erro de comunicação com a API ao cancelar a venda.');
+            console.error('Erro:', error);
+        }
+
+        fecharModalSenha();
+    });
+}
+
+
+function fecharModalSenha() {
+    modalSenha.style.display = 'none';
+}
+
+// Event Listeners
+adicionarProdutoBtn.addEventListener('click', adicionarAoCarrinho);
+finalizarVendaBtn.addEventListener('click', finalizarVenda);
+lancarSaidaDeliveryBtn.addEventListener('click', lancarSaidaDelivery);
+
+// Otimiza o cálculo do troco para ser dinâmico
+valorRecebidoInput.addEventListener('input', calcularTroco);
+formaPagamentoSelect.addEventListener('change', calcularTroco);
+
+// Modal de Senha
+fecharModalBtn.addEventListener('click', fecharModalSenha);
+
+// Carrega o histórico de vendas ao carregar a página
+document.addEventListener('DOMContentLoaded', () => {
+    carregarHistoricoVendasDiarias();
+    // A função visualizarEstoque() deve ser adicionada e chamada aqui se for o caso
+});
