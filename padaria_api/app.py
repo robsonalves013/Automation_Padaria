@@ -13,7 +13,7 @@ app.config.from_object(Config)
 
 db.init_app(app)
 
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app)
 
 app.register_blueprint(vendas_bp, url_prefix='/api')
 app.register_blueprint(estoque_bp, url_prefix='/api')
