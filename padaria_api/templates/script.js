@@ -1,4 +1,4 @@
-// script.js (versão melhorada e unificada)
+// script.js (versão completa e corrigida)
 const API_URL = 'http://127.0.0.1:5000/api';
 
 // Cache dos elementos do DOM
@@ -22,14 +22,14 @@ const DOM = {
     // Estoque
     tabelaEstoqueBody: document.querySelector('#tabela-estoque tbody'),
     alertaInfoDiv: document.getElementById('alerta-info'),
-    abrirModalEstoqueBtn: document.getElementById('abrir-modal-estoque'), // Novo
-    modalEstoque: document.getElementById('modal-estoque'), // Novo
-    fecharModalEstoqueBtn: document.getElementById('fechar-modal-estoque'), // Novo
-    salvarNovoProdutoBtn: document.getElementById('salvar-novo-produto'), // Novo
-    novoProdutoIdInput: document.getElementById('novo-produto-id'), // Novo
-    novoProdutoNomeInput: document.getElementById('novo-produto-nome'), // Novo
-    novoProdutoValorInput: document.getElementById('novo-produto-valor'), // Novo
-    novoProdutoQuantidadeInput: document.getElementById('novo-produto-quantidade'), // Novo
+    abrirModalEstoqueBtn: document.getElementById('abrir-modal-estoque'),
+    modalEstoque: document.getElementById('modal-estoque'),
+    fecharModalEstoqueBtn: document.getElementById('fechar-modal-estoque'),
+    salvarNovoProdutoBtn: document.getElementById('salvar-novo-produto'),
+    novoProdutoIdInput: document.getElementById('novo-produto-id'),
+    novoProdutoNomeInput: document.getElementById('novo-produto-nome'),
+    novoProdutoValorInput: document.getElementById('novo-produto-valor'),
+    novoProdutoQuantidadeInput: document.getElementById('novo-produto-quantidade'),
 
     // Relatórios
     relatorioDiarioBtn: document.getElementById('relatorio-diario-btn'),
@@ -180,9 +180,9 @@ async function finalizarVenda() {
             mostrarToast(data.mensagem);
             carrinho = [];
             carregarCarrinho();
-            carregarEstoque(); // Atualiza a tabela de estoque após a venda
+            carregarEstoque();
             carregarAlertasEstoque();
-            carregarHistoricoVendasDiarias(); // Atualiza histórico diário
+            carregarHistoricoVendasDiarias();
         } else {
             mostrarToast(data.erro, 'error');
         }
@@ -205,7 +205,7 @@ async function cancelarVenda(vendaId, senha) {
             mostrarToast(data.mensagem);
             fecharModalSenha();
             carregarHistoricoVendasDiarias();
-            carregarEstoque(); // Atualiza a tabela de estoque
+            carregarEstoque();
         } else {
             mostrarToast(data.erro, 'error');
         }
@@ -288,7 +288,6 @@ async function carregarAlertasEstoque() {
     }
 }
 
-// Nova função para adicionar um novo produto
 async function salvarNovoProduto() {
     const produtoData = {
         id: DOM.novoProdutoIdInput.value.trim(),
@@ -297,6 +296,7 @@ async function salvarNovoProduto() {
         quantidade: parseInt(DOM.novoProdutoQuantidadeInput.value)
     };
 
+    // Validação extra no front-end para evitar requisições desnecessárias
     if (!produtoData.id || !produtoData.nome || isNaN(produtoData.valor) || isNaN(produtoData.quantidade)) {
         mostrarToast('Preencha todos os campos corretamente.', 'error');
         return;
@@ -312,8 +312,14 @@ async function salvarNovoProduto() {
 
         if (response.ok) {
             mostrarToast(data.mensagem);
-            DOM.modalEstoque.style.display = 'none'; // Fecha o modal
-            carregarEstoque(); // Recarrega a tabela para mostrar o novo item
+            DOM.modalEstoque.style.display = 'none';
+            // Limpa os campos do formulário após o sucesso
+            DOM.novoProdutoIdInput.value = '';
+            DOM.novoProdutoNomeInput.value = '';
+            DOM.novoProdutoValorInput.value = '';
+            DOM.novoProdutoQuantidadeInput.value = '';
+            
+            carregarEstoque();
             carregarAlertasEstoque();
         } else {
             mostrarToast(data.erro, 'error');
@@ -330,17 +336,32 @@ async function gerarRelatorio(tipo) {
         const response = await fetch(`${API_URL}/relatorios/${tipo}`);
         const data = await response.json();
         const relatorioNome = tipo.charAt(0).toUpperCase() + tipo.slice(1);
-        
+
         if (response.ok) {
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `relatorio_${tipo}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            mostrarToast(`Relatório de Vendas ${relatorioNome} gerado com sucesso.`);
+            if (!data.vendas || data.vendas.length === 0) {
+                mostrarToast('Nenhuma venda para gerar relatório.', 'info');
+                return;
+            }
+            
+            const vendasFormatadas = data.vendas.map(venda => {
+                const itens = venda.itens_vendidos.map(item => `${item.nome} (${item.quantidade}x)`).join(', ');
+                return {
+                    'ID da Venda': venda.id,
+                    'Data e Hora': new Date(venda.data_hora).toLocaleString('pt-BR'),
+                    'Valor Total': parseFloat(venda.valor_total).toFixed(2).replace('.', ','),
+                    'Forma de Pagamento': venda.forma_pagamento,
+                    'Itens Vendidos': itens
+                };
+            });
+
+            const worksheet = XLSX.utils.json_to_sheet(vendasFormatadas);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Relatório');
+
+            XLSX.writeFile(workbook, `relatorio_${tipo}.xlsx`);
+
+            mostrarToast(`Relatório ${relatorioNome} gerado com sucesso em .xlsx!`);
+
         } else {
             mostrarToast(data.erro, 'error');
         }
@@ -376,19 +397,33 @@ async function enviarRelatorioPorEmail() {
 }
 
 // --- Lógica de Abas ---
+function showTab(tabId) {
+    DOM.tabButtons.forEach(btn => {
+        if (btn.dataset.tabTarget === tabId) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    DOM.tabContents.forEach(content => {
+        if (content.id === tabId.substring(1)) {
+            content.classList.add('active');
+        } else {
+            content.classList.remove('active');
+        }
+    });
+}
+
 DOM.tabButtons.forEach(button => {
     button.addEventListener('click', () => {
-        DOM.tabButtons.forEach(btn => btn.classList.remove('active'));
-        DOM.tabContents.forEach(content => content.classList.remove('active'));
-        button.classList.add('active');
-        const tabTarget = document.querySelector(button.dataset.tabTarget);
-        tabTarget.classList.add('active');
+        const tabTarget = button.dataset.tabTarget;
+        showTab(tabTarget);
 
-        const tabId = button.dataset.tabTarget;
-        if (tabId === '#estoque') {
+        if (tabTarget === '#estoque') {
             carregarEstoque();
             carregarAlertasEstoque();
-        } else if (tabId === '#vendas') {
+        } else if (tabTarget === '#vendas') {
             carregarHistoricoVendasDiarias();
         }
     });
@@ -425,7 +460,6 @@ DOM.confirmarCancelamentoBtn.addEventListener('click', () => {
     }
 });
 
-// Event listeners para o novo modal de estoque
 DOM.abrirModalEstoqueBtn.addEventListener('click', () => {
     DOM.modalEstoque.style.display = 'flex';
 });
