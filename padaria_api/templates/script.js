@@ -22,6 +22,14 @@ const DOM = {
     // Estoque
     tabelaEstoqueBody: document.querySelector('#tabela-estoque tbody'),
     alertaInfoDiv: document.getElementById('alerta-info'),
+    abrirModalEstoqueBtn: document.getElementById('abrir-modal-estoque'), // Novo
+    modalEstoque: document.getElementById('modal-estoque'), // Novo
+    fecharModalEstoqueBtn: document.getElementById('fechar-modal-estoque'), // Novo
+    salvarNovoProdutoBtn: document.getElementById('salvar-novo-produto'), // Novo
+    novoProdutoIdInput: document.getElementById('novo-produto-id'), // Novo
+    novoProdutoNomeInput: document.getElementById('novo-produto-nome'), // Novo
+    novoProdutoValorInput: document.getElementById('novo-produto-valor'), // Novo
+    novoProdutoQuantidadeInput: document.getElementById('novo-produto-quantidade'), // Novo
 
     // Relatórios
     relatorioDiarioBtn: document.getElementById('relatorio-diario-btn'),
@@ -280,6 +288,42 @@ async function carregarAlertasEstoque() {
     }
 }
 
+// Nova função para adicionar um novo produto
+async function salvarNovoProduto() {
+    const produtoData = {
+        id: DOM.novoProdutoIdInput.value.trim(),
+        nome: DOM.novoProdutoNomeInput.value.trim(),
+        valor: parseFloat(DOM.novoProdutoValorInput.value),
+        quantidade: parseInt(DOM.novoProdutoQuantidadeInput.value)
+    };
+
+    if (!produtoData.id || !produtoData.nome || isNaN(produtoData.valor) || isNaN(produtoData.quantidade)) {
+        mostrarToast('Preencha todos os campos corretamente.', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/estoque/adicionar`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(produtoData)
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+            mostrarToast(data.mensagem);
+            DOM.modalEstoque.style.display = 'none'; // Fecha o modal
+            carregarEstoque(); // Recarrega a tabela para mostrar o novo item
+            carregarAlertasEstoque();
+        } else {
+            mostrarToast(data.erro, 'error');
+        }
+    } catch (error) {
+        mostrarToast('Erro ao adicionar produto ao estoque. Tente novamente.', 'error');
+        console.error('Erro:', error);
+    }
+}
+
 // --- Lógica de Relatórios ---
 async function gerarRelatorio(tipo) {
     try {
@@ -288,7 +332,6 @@ async function gerarRelatorio(tipo) {
         const relatorioNome = tipo.charAt(0).toUpperCase() + tipo.slice(1);
         
         if (response.ok) {
-            // Cria um link para download do arquivo JSON
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -335,18 +378,12 @@ async function enviarRelatorioPorEmail() {
 // --- Lógica de Abas ---
 DOM.tabButtons.forEach(button => {
     button.addEventListener('click', () => {
-        // Remove a classe 'active' de todos os botões e conteúdos
         DOM.tabButtons.forEach(btn => btn.classList.remove('active'));
         DOM.tabContents.forEach(content => content.classList.remove('active'));
-
-        // Adiciona a classe 'active' ao botão clicado
         button.classList.add('active');
-
-        // Exibe o conteúdo correspondente
         const tabTarget = document.querySelector(button.dataset.tabTarget);
         tabTarget.classList.add('active');
 
-        // Recarrega o conteúdo da aba se necessário
         const tabId = button.dataset.tabTarget;
         if (tabId === '#estoque') {
             carregarEstoque();
@@ -387,6 +424,17 @@ DOM.confirmarCancelamentoBtn.addEventListener('click', () => {
         mostrarToast('Preencha a senha.', 'error');
     }
 });
+
+// Event listeners para o novo modal de estoque
+DOM.abrirModalEstoqueBtn.addEventListener('click', () => {
+    DOM.modalEstoque.style.display = 'flex';
+});
+
+DOM.fecharModalEstoqueBtn.addEventListener('click', () => {
+    DOM.modalEstoque.style.display = 'none';
+});
+
+DOM.salvarNovoProdutoBtn.addEventListener('click', salvarNovoProduto);
 
 DOM.listaVendasDiarias.addEventListener('click', (e) => {
     if (e.target.classList.contains('btn-cancelar-venda')) {

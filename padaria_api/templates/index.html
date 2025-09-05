@@ -9,7 +9,8 @@
 <body>
 
     <header>
-        <h1>Sistema Ponto de Venda</h1>
+        <img src="logo.png" alt="Logo do Estabelecimento" class="logo">
+        <h1>Sistema de Gestão da Padaria Majurak</h1>
     </header>
 
     <main class="container">
@@ -73,6 +74,35 @@
         <div id="estoque" class="tab-content">
             <section class="card">
                 <h2>Estoque</h2>
+
+                <button id="abrir-modal-estoque" class="btn btn-primary">Adicionar Novo Produto</button>
+
+                <div id="modal-estoque" class="modal">
+                    <div class="modal-content">
+                        <h3>Adicionar Novo Produto</h3>
+                        <div class="form-group">
+                            <label for="novo-produto-id">ID:</label>
+                            <input type="text" id="novo-produto-id">
+                        </div>
+                        <div class="form-group">
+                            <label for="novo-produto-nome">Nome:</label>
+                            <input type="text" id="novo-produto-nome">
+                        </div>
+                        <div class="form-group">
+                            <label for="novo-produto-valor">Valor:</label>
+                            <input type="number" id="novo-produto-valor" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label for="novo-produto-quantidade">Quantidade:</label>
+                            <input type="number" id="novo-produto-quantidade">
+                        </div>
+                        <div class="modal-buttons">
+                            <button id="salvar-novo-produto" class="btn btn-success">Salvar</button>
+                            <button id="fechar-modal-estoque" class="btn btn-secondary">Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="alerta-info" class="alerta-info"></div>
                 <div class="table-container">
                     <table id="tabela-estoque">
