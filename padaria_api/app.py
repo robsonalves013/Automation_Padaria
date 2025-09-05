@@ -11,6 +11,7 @@ from routes.relatorios import relatorios_bp
 
 # Inicializa o aplicativo Flask e o CORS
 app = Flask(__name__)
+CORS(app)
 app.config.from_object(Config)
 
 # Inicializa o SQLAlchemy e as migrações
