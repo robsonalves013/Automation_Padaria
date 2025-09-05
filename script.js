@@ -509,6 +509,11 @@ async function confirmarCancelamento() {
 }
 
 // Event Listeners
+DOM.relatorioDiarioBtn.addEventListener('click', () => carregarHistoricoVendasDiarias());
+DOM.relatorioMensalBtn.addEventListener('click', () => gerarRelatorio('mensal', 'Relatório de Vendas Mensais'));
+DOM.relatorioGeralBtn.addEventListener('click', () => gerarRelatorio('geral', 'Relatório de Vendas Geral'));
+DOM.relatorioDeliveryBtn.addEventListener('click', () => gerarRelatorio('delivery', 'Relatório de Vendas Delivery'));
+DOM.enviarEmailBtn.addEventListener('click', enviarRelatorioPorEmail);
 DOM.adicionarProdutoBtn.addEventListener('click', adicionarAoCarrinho);
 DOM.finalizarVendaBtn.addEventListener('click', finalizarVenda);
 DOM.lancarSaidaDeliveryBtn.addEventListener('click', lancarSaidaDelivery);
@@ -521,7 +526,7 @@ DOM.relatorioGeralBtn.addEventListener('click', () => gerarRelatorio('geral', 'R
 DOM.relatorioDeliveryBtn.addEventListener('click', () => gerarRelatorio('delivery', 'Relatório de Vendas Delivery'));
 DOM.enviarEmailBtn.addEventListener('click', enviarRelatorioPorEmail);
 DOM.formaPagamentoSelect.addEventListener('change', () => {
-    DOM.valorRecebidoInput.style.display = DOM.formaPagamentoSelect.value === 'Dinheiro' ? 'block' : 'none';
+DOM.valorRecebidoInput.style.display = DOM.formaPagamentoSelect.value === 'Dinheiro' ? 'block' : 'none';
     calcularTroco();
 });
 DOM.valorRecebidoInput.addEventListener('input', calcularTroco);
