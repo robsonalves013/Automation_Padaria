@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Gestão da Padaria Majurak</title>
     <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
 </head>
 <body>
     <header>
         <div class="header-content">
-            <img src="logo.png" alt="Logo Padaria Majurak" class="logo">
+            <img src="images/logo.png" alt="Logo Padaria Majurak" class="logo">
             <h1>Sistema de Gestão da Padaria Majurak</h1>
         </div>
     </header>
@@ -52,21 +53,9 @@
                         <option value="iFood">iFood</option>
                         <option value="99food">99food</option>
                     </select>
-                    
                     <input type="text" id="produto-id-delivery" placeholder="Cód. de Barras">
                     <input type="number" id="produto-quantidade-delivery" placeholder="Qtd" value="1" min="1">
                     <button id="lancar-saida-delivery" class="btn-primary">Lançar Saída</button>
-                </div>
-            </div>
-            
-            <hr>
-            
-            <div class="historico-vendas-container">
-                <h3>Histórico de Vendas do Dia</h3>
-                <ul id="historico-vendas-diarias">
-                    </ul>
-                <div class="fechamento-caixa">
-                    <p>Total de Vendas do Dia (Fechamento de Caixa): R$ <span id="valor-fechamento-caixa">0.00</span></p>
                 </div>
             </div>
         </section>
@@ -74,21 +63,17 @@
         <hr>
 
         <section id="estoque">
-            <h2>Controle de Estoque</h2>
+            <h2>Gestão de Estoque</h2>
             <div class="estoque-container">
-                <div id="form-cadastro">
-                    <h3>Cadastrar / Atualizar Produto</h3>
-                    <form id="estoque-form">
-                        <input type="text" id="form-id" placeholder="Cód. de Barras" required>
-                        <input type="text" id="form-nome" placeholder="Nome do Produto" required>
-                        <input type="number" id="form-valor" placeholder="Valor" step="0.01" required>
-                        <input type="number" id="form-quantidade" placeholder="Quantidade" required>
-                        <button type="submit" class="btn-primary">Salvar Produto</button>
-                    </form>
-                </div>
-
-                <div id="visualizacao-estoque">
-                    <button id="visualizar-estoque" class="btn-secondary">Atualizar Itens do Estoque</button>
+                <form id="estoque-form">
+                    <input type="text" id="form-id" placeholder="Cód. Produto" required>
+                    <input type="text" id="form-nome" placeholder="Nome do Produto" required>
+                    <input type="number" id="form-valor" placeholder="Valor (R$)" step="0.01" min="0" required>
+                    <input type="number" id="form-quantidade" placeholder="Quantidade" min="0" required>
+                    <button type="submit" class="btn-primary">Adicionar/Atualizar Produto</button>
+                </form>
+                <div class="estoque-visualizacao">
+                    <button id="visualizar-estoque" class="btn-secondary">Visualizar Estoque</button>
                     <button id="alerta-estoque" class="btn-secondary">Ver Alertas</button>
                     <div id="tabela-estoque"></div>
                     <div id="alerta-info" style="display: none;"></div>
@@ -108,8 +93,20 @@
                 <div id="relatorio-output"></div>
             </div>
         </section>
-</main>
-</main>
+
+        <hr>
+
+        <section id="historico-vendas">
+            <h2>Histórico de Vendas Diárias</h2>
+            <div class="historico-container">
+                <div class="fechamento-caixa">
+                    <p>Fechamento de Caixa: R$ <span id="valor-fechamento-caixa">0.00</span></p>
+                </div>
+                <ul id="historico-vendas-diarias">
+                    </ul>
+            </div>
+        </section>
+    </main>
 
     <div id="modal-senha" class="modal-overlay">
         <div class="modal-content">
@@ -121,7 +118,5 @@
             </div>
         </div>
     </div>
-<script src="https://cdn.jsdelivr.net/npm/quagga/dist/quagga.min.js"></script>
-    <script src="script.js"></script>
 </body>
 </html>

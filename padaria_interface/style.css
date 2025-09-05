@@ -1,3 +1,4 @@
+/* style.css */
 /* Cores Base */
 :root {
     --primary-brown: #5C4033; /* Marrom Principal */
@@ -6,310 +7,30 @@
     --text-black: #222222; /* Preto para Textos */
     --border-light: #DDDDDD; /* Borda clara */
     --accent-red: #D9534F; /* Para alertas, se necessário */
+    --danger-red: #dc3545; /* Vermelho para cancelamento */
+    --success-green: #28a745; /* Verde para sucesso */
 }
 
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: var(--background-white);
-    color: var(--text-black);
-    margin: 0;
-    padding: 0;
-    line-height: 1.6;
-}
+/* ... (código existente) ... */
 
-header {
-    background-color: var(--primary-brown);
-    color: var(--background-white);
-    padding: 1rem 0;
-    text-align: center;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-.header-content {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 15px; /* Espaço entre o logo e o texto */
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 0 20px;
-}
-
-.logo {
-    max-height: 200px; /* Ajuste o tamanho do seu logo aqui */
-    width: auto;
-    border-radius: 200%; /* Se você quiser um logo circular */
-    border: 2px solid var(--background-white);
-}
-
-header h1 {
-    margin: 0;
-    font-size: 2.2rem;
-    font-weight: 600;
-}
-
-main {
-    padding: 2.5rem 2rem;
-    max-width: 900px;
-    margin: 30px auto;
-    background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}
-
-section {
-    margin-bottom: 2.5rem;
-}
-
-h2 {
-    color: var(--primary-brown);
-    border-bottom: 2px solid var(--border-light);
-    padding-bottom: 0.8rem;
-    margin-top: 0;
-    font-size: 1.8rem;
-}
-
-h3 {
-    color: var(--secondary-brown);
-    font-size: 1.2rem;
-}
-
-.venda-container, .estoque-container, .relatorios-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.5rem;
-    align-items: flex-start;
-}
-
-#carrinho {
-    border: 1px solid var(--border-light);
-    background-color: #fcfcfc;
-    padding: 1.2rem;
-    flex: 1;
-    min-width: 300px;
-    border-radius: 6px;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-#lista-carrinho {
-    list-style: none;
-    padding: 0;
-    margin-bottom: 1rem;
-}
-
-#lista-carrinho li {
-    padding: 8px 0;
-    border-bottom: 1px dashed var(--border-light);
-}
-
-#lista-carrinho li:last-child {
-    border-bottom: none;
-}
-
-#valor-total {
-    font-weight: bold;
-    color: var(--secondary-brown);
-    font-size: 1.1rem;
-}
-
-.venda-inputs {
-    flex: 2;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-input[type="text"], 
-input[type="number"], 
-select {
-    padding: 12px;
-    font-size: 1rem;
-    border-radius: 6px;
-    border: 1px solid var(--border-light);
-    width: calc(100% - 24px); /* Para compensar o padding */
-    box-sizing: border-box; /* Inclui padding na largura total */
-}
-
-input:focus, select:focus, button:focus {
-    outline: none;
-    border-color: var(--secondary-brown);
-    box-shadow: 0 0 0 2px rgba(139, 69, 19, 0.2);
-}
-
-button {
-    padding: 12px 15px;
-    font-size: 1rem;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.1s ease;
-    font-weight: 500;
-}
-
-.btn-primary {
-    background-color: var(--primary-brown);
-    color: white;
-}
-
-.btn-primary:hover {
-    background-color: var(--secondary-brown);
-    transform: translateY(-1px);
-}
-
-.btn-secondary {
-    background-color: var(--background-white);
-    color: var(--primary-brown);
-    border: 1px solid var(--primary-brown);
-}
-
-.btn-secondary:hover {
-    background-color: var(--primary-brown);
-    color: white;
-    transform: translateY(-1px);
-}
-
-.pagamento {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-#troco-info {
-    padding: 10px;
-    background-color: #e6ffe6; /* Um verde suave para o troco */
-    border: 1px solid #c8e6c9;
-    color: #388e3c;
-    border-radius: 5px;
-    font-weight: bold;
-    text-align: center;
-    margin-top: 10px;
-}
-
-hr {
-    border: 0;
-    border-top: 1px dashed var(--border-light);
-    margin: 3rem 0;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 1.5rem;
-    background-color: white;
-    border-radius: 6px;
-    overflow: hidden; /* Garante que bordas arredondadas funcionem */
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-th, td {
-    border: 1px solid var(--border-light);
-    padding: 10px 15px;
-    text-align: left;
-}
-
-th {
-    background-color: var(--primary-brown);
-    color: white;
-    font-weight: 600;
-}
-
-td {
-    color: var(--text-black);
-}
-
-tr:nth-child(even) {
-    background-color: #f9f9f9; /* Linhas alternadas */
-}
-
+/* Adicionado para os alertas de estoque e vendas */
 .alerta {
-    color: var(--accent-red);
-    font-weight: bold;
-    background-color: #ffe6e6; /* Fundo suave para alertas */
-    padding: 5px 10px;
-    border-radius: 4px;
-    border: 1px solid var(--accent-red);
+    background-color: #fff8e1; /* Amarelo suave */
+    border-left: 5px solid #ffc107;
 }
 
-#alerta-info, #tabela-estoque {
-    background-color: #fcfcfc;
-    border: 1px solid var(--border-light);
-    border-radius: 6px;
-    padding: 1.2rem;
-    margin-top: 1rem;
-    width: 100%;
+.cancelada {
+    background-color: #f8d7da; /* Vermelho suave */
+    color: var(--danger-red);
+    border-left: 5px solid var(--danger-red);
+    text-decoration: line-through;
 }
 
-#relatorio-output {
-    background-color: #fcfcfc;
-    border: 1px solid var(--border-light);
-    border-radius: 6px;
-    padding: 1.2rem;
-    margin-top: 1rem;
-    width: 100%;
-    overflow-x: auto; /* Para relatórios muito largos */
+.concluida {
+    /* Sem alteração, usa o estilo padrão */
 }
 
-pre {
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    font-size: 0.9em;
-    color: var(--text-black);
-}
-
-/* Responsividade básica */
-@media (max-width: 768px) {
-    .header-content {
-        flex-direction: column;
-        gap: 10px;
-    }
-    header h1 {
-        font-size: 1.8rem;
-    }
-    main {
-        margin: 20px auto;
-        padding: 1.5rem;
-    }
-    .venda-resumo {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    }
-    .btn-detalhes {
-        background-color: transparent;
-        border: none;
-        color: var(--secondary-brown);
-        cursor: pointer;
-        font-weight: bold;
-        padding: 5px;
-    }
-    .btn-detalhes:hover {
-        text-decoration: underline;
-    }
-    .detalhes-venda-lista {
-        list-style-type: none;
-        padding-left: 20px;
-        margin-top: 5px;
-        border-left: 2px solid var(--border-light);
-    }
-    .venda-container, .estoque-container, .relatorios-container {
-        flex-direction: column;
-    }
-    .venda-inputs, #carrinho {
-        min-width: unset;
-        width: 100%;
-    }
-    .pagamento {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    input[type="text"], 
-    input[type="number"], 
-    select,
-    button {
-        width: 100%;
-    }
-    /* Estilos para o Modal de Senha */
+/* Estilos para o Modal de Senha */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -327,28 +48,51 @@ pre {
     background-color: white;
     padding: 2rem;
     border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     text-align: center;
-    width: 90%;
     max-width: 400px;
-}
-
-.modal-content h3 {
-    margin-top: 0;
-    color: var(--primary-brown);
-}
-
-.modal-content input[type="password"] {
-    width: 100%;
-    padding: 10px;
-    margin: 1rem 0;
-    border: 1px solid var(--border-light);
-    border-radius: 4px;
-    box-sizing: border-box; /* Garante que o padding não afete a largura total */
+    width: 90%;
 }
 
 .modal-buttons {
     display: flex;
     justify-content: space-around;
+    gap: 10px;
+    margin-top: 20px;
 }
+
+.venda-resumo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+}
+
+.venda-resumo .btn-cancelar {
+    background-color: var(--danger-red);
+    color: white;
+    border: none;
+    padding: 5px 10px;
+}
+
+.venda-resumo .btn-cancelar:hover {
+    background-color: #c82333;
+}
+
+.observacao-cancelamento {
+    font-style: italic;
+    color: #666;
+    margin-top: 5px;
+    border-left: 2px solid var(--border-light);
+    padding-left: 10px;
+}
+.observacao-cancelamento span {
+    font-weight: bold;
+}
+
+@media (max-width: 768px) {
+    /* ... (código existente) ... */
+    .modal-content {
+        padding: 1.5rem;
+    }
 }

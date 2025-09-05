@@ -1,5 +1,6 @@
+// script.js (versão melhorada e unificada)
 // Onde sua API está rodando
-const API_URL = 'http://127.0.0.1:5000';
+const API_URL = 'http://127.0.0.1:5000/api';
 
 // Cache dos elementos do DOM para melhor performance
 const produtoIdInput = document.getElementById('produto-id');
@@ -15,7 +16,7 @@ const tabelaEstoqueDiv = document.getElementById('tabela-estoque');
 const alertaInfoDiv = document.getElementById('alerta-info');
 const relatorioOutputDiv = document.getElementById('relatorio-output');
 
-// NOVOS ELEMENTOS para o histórico de vendas
+// Elementos para o histórico de vendas
 const historicoVendasDiariasUl = document.getElementById('historico-vendas-diarias');
 const valorFechamentoCaixaSpan = document.getElementById('valor-fechamento-caixa');
 
@@ -38,12 +39,11 @@ const senhaInput = document.getElementById('senha-input');
 const confirmarCancelamentoBtn = document.getElementById('confirmar-cancelamento-btn');
 const fecharModalBtn = document.getElementById('fechar-modal-btn');
 
-
 let carrinho = [];
+let vendaParaCancelarId = null;
 
 // Funções de Vendas
 // ---
-
 async function adicionarAoCarrinho() {
     const produtoId = produtoIdInput.value.trim();
     const quantidade = parseInt(produtoQuantidadeInput.value);
@@ -149,8 +149,8 @@ async function finalizarVenda() {
             carrinho = [];
             atualizarCarrinhoUI();
             trocoInfo.style.display = 'none';
-            // Chama a função para atualizar o histórico de vendas após o sucesso
-            carregarHistoricoVendasDiarias();
+            carregarHistoricoVendasDiarias(); // Atualiza o histórico
+            visualizarEstoque(); // Atualiza a tabela de estoque
         } else {
             alert(`Erro na venda: ${result.erro}`);
         }
@@ -160,222 +160,79 @@ async function finalizarVenda() {
     }
 }
 
-async function carregarHistoricoVendasDiarias() {
+// Funções de Estoque
+// ---
+
+async function visualizarEstoque() {
     try {
-        const response = await fetch(`${API_URL}/relatorios/diario`);
-        
+        const response = await fetch(`${API_URL}/estoque`);
         if (!response.ok) {
-            throw new Error(`Erro de rede: ${response.status} ${response.statusText}`);
+            throw new Error('Erro ao carregar estoque.');
         }
-
         const result = await response.json();
-        
-        historicoVendasDiariasUl.innerHTML = '';
-        let totalDiario = 0;
+        const estoque = result.estoque;
 
-        if (result.vendas && result.vendas.length > 0) {
-            result.vendas.forEach(venda => {
-                const li = document.createElement('li');
-                // Aplica a classe 'cancelada' se o status for 'cancelada'
-                if (venda.status === 'cancelada') {
-                    li.classList.add('cancelada');
-                }
-                
-                const valorTotal = venda.valor_total.toFixed(2);
-                const dataHora = new Date(venda.data_hora);
-                const hora = dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                
-                // CRIA A LISTA DE ITENS OCULTA
-                let itensVendaHTML = `<ul style="display: none;" class="detalhes-venda-lista">`;
-                venda.itens_vendidos.forEach(item => {
-                    itensVendaHTML += `<li>${item.quantidade}x ${item.nome}</li>`;
-                });
-                itensVendaHTML += `</ul>`;
-
-                let observacaoCancelamentoHTML = '';
-                if (venda.status === 'cancelada' && venda.observacao_cancelamento) {
-                    observacaoCancelamentoHTML = `<span class="observacao-cancelamento">(${venda.observacao_cancelamento})</span>`;
-                }
-
-                const cancelarButtonDisabled = venda.status === 'cancelada' ? 'disabled' : '';
-
-                li.innerHTML = `
-                    <div class="venda-resumo">
-                        <strong>[${hora}]</strong> Venda #${venda.id} - R$ ${valorTotal} ${observacaoCancelamentoHTML}
-                        <div class="venda-acoes">
-                            <button class="btn-detalhes">+ Detalhes</button>
-                            <button class="btn-cancelar" data-venda-id="${venda.id}" ${cancelarButtonDisabled}>Cancelar Venda</button>
-                        </div>
-                    </div>
-                    ${itensVendaHTML}
-                `;
-                historicoVendasDiariasUl.appendChild(li);
-                
-                // Somente soma ao total de vendas diárias se a venda não estiver cancelada
-                if (venda.status !== 'cancelada') {
-                    totalDiario += venda.valor_total;
-                }
-            });
-
-            // Adiciona o evento de clique aos botões de detalhes
-            document.querySelectorAll('.btn-detalhes').forEach(btn => {
-                btn.addEventListener('click', (event) => {
-                    const listaItens = event.target.closest('li').querySelector('.detalhes-venda-lista');
-                    if (listaItens.style.display === 'none') {
-                        listaItens.style.display = 'block';
-                        event.target.textContent = '- Fechar';
-                    } else {
-                        listaItens.style.display = 'none';
-                        event.target.textContent = '+ Detalhes';
-                    }
-                });
-            });
-
-            // Adiciona o evento de clique aos botões de cancelar
-            document.querySelectorAll('.btn-cancelar').forEach(btn => {
-                if (!btn.disabled) { // Apenas adiciona o listener se o botão não estiver desabilitado
-                    btn.addEventListener('click', (event) => {
-                        const vendaId = event.target.dataset.vendaId;
-                        abrirModalSenha(vendaId);
-                    });
-                }
-            });
-
-        } else {
-            historicoVendasDiariasUl.innerHTML = '<li>Nenhuma venda registrada hoje.</li>';
-        }
-
-        valorFechamentoCaixaSpan.textContent = totalDiario.toFixed(2);
-
-    } catch (error) {
-        console.error('Erro ao carregar histórico de vendas:', error);
-        historicoVendasDiariasUl.innerHTML = '<li>Erro ao carregar o histórico.</li>';
-        valorFechamentoCaixaSpan.textContent = '0.00';
-    }
-}
-
-// Nova função para Lançamento de Vendas Delivery
-async function lancarSaidaDelivery() {
-    const plataforma = plataformaDeliverySelect.value;
-    const produtoId = produtoIdDeliveryInput.value.trim();
-    const quantidade = parseInt(produtoQuantidadeDeliveryInput.value);
-
-    if (!produtoId || quantidade < 1) {
-        alert('Por favor, insira um código de produto e uma quantidade válida.');
-        return;
-    }
-
-    const saidaData = {
-        plataforma: plataforma,
-        id: produtoId,
-        quantidade: quantidade
-    };
-
-    try {
-        const response = await fetch(`${API_URL}/estoque/saida`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(saidaData)
+        let tabelaHTML = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>Cód.</th>
+                        <th>Nome</th>
+                        <th>Valor (R$)</th>
+                        <th>Quantidade</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        estoque.forEach(produto => {
+            tabelaHTML += `
+                <tr class="${produto.alerta_reposicao ? 'alerta' : ''}">
+                    <td>${produto.id}</td>
+                    <td>${produto.nome}</td>
+                    <td>${produto.valor.toFixed(2)}</td>
+                    <td>${produto.quantidade}</td>
+                    <td><button onclick="preencherFormulario('${produto.id}', '${produto.nome}', ${produto.valor}, ${produto.quantidade})">Editar</button></td>
+                </tr>
+            `;
         });
+        tabelaHTML += `
+                </tbody>
+            </table>
+        `;
 
-        const result = await response.json();
-
-        if (response.ok) {
-            alert(`Saída de estoque lançada com sucesso: ${result.mensagem}`);
-            produtoIdDeliveryInput.value = '';
-            produtoQuantidadeDeliveryInput.value = 1;
-            visualizarEstoque();
-            // ADICIONADO: Chama a função para atualizar o histórico de vendas após o sucesso
-            carregarHistoricoVendasDiarias();
-        } else {
-            alert(`Erro: ${result.erro}`);
-        }
+        tabelaEstoqueDiv.innerHTML = tabelaHTML;
     } catch (error) {
-        alert('Erro de comunicação com a API.');
+        tabelaEstoqueDiv.innerHTML = `<p class="erro">${error.message}</p>`;
         console.error('Erro:', error);
     }
 }
 
-// Funções para o Modal de Senha
-function abrirModalSenha(vendaId) {
-    modalSenha.style.display = 'flex';
-    senhaInput.value = ''; // Limpa o campo
-    senhaInput.focus();
-
-    // Remove listeners antigos para evitar duplicação
-    const oldConfirmBtn = confirmarCancelamentoBtn;
-    const newConfirmBtn = oldConfirmBtn.cloneNode(true);
-    oldConfirmBtn.parentNode.replaceChild(newConfirmBtn, oldConfirmBtn);
-    
-    // Adiciona o novo listener com o vendaId correto
-    newConfirmBtn.addEventListener('click', async () => {
-        const senhaMestre = senhaInput.value;
-        if (!senhaMestre) {
-            alert('Por favor, digite a senha mestre.');
-            return;
-        }
-
-        const motivo = prompt('Por favor, digite o motivo do cancelamento:');
-        if (!motivo) {
-            alert('Cancelamento abortado. O motivo é obrigatório.');
-            return;
-        }
-
-        try {
-            const response = await fetch(`${API_URL}/vendas/cancelar/${vendaId}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    senha: senhaMestre,
-                    motivo: motivo
-                })
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                alert('Venda cancelada com sucesso!');
-                carregarHistoricoVendasDiarias();
-            } else {
-                alert(`Erro ao cancelar a venda: ${result.erro}`);
-            }
-        } catch (error) {
-            alert('Erro de comunicação com a API ao cancelar a venda.');
-            console.error('Erro:', error);
-        }
-
-        fecharModalSenha();
-    });
+function preencherFormulario(id, nome, valor, quantidade) {
+    formIdInput.value = id;
+    formNomeInput.value = nome;
+    formValorInput.value = valor;
+    formQuantidadeInput.value = quantidade;
 }
 
-
-function fecharModalSenha() {
-    modalSenha.style.display = 'none';
-}
-
-// NOVO: Adiciona a função para manipular o formulário de estoque
 async function manipularEstoque(event) {
-    event.preventDefault(); // Impede o envio padrão do formulário
+    event.preventDefault();
 
-    const id = formIdInput.value.trim();
-    const nome = formNomeInput.value.trim();
-    const valor = parseFloat(formValorInput.value);
-    const quantidade = parseInt(formQuantidadeInput.value);
-
-    if (!id || !nome || isNaN(valor) || isNaN(quantidade)) {
-        alert('Por favor, preencha todos os campos do formulário de estoque com valores válidos.');
+    const produtoData = {
+        id: formIdInput.value.trim(),
+        nome: formNomeInput.value.trim(),
+        valor: parseFloat(formValorInput.value),
+        quantidade: parseInt(formQuantidadeInput.value)
+    };
+    
+    // Validação básica
+    if (!produtoData.id || !produtoData.nome || isNaN(produtoData.valor) || isNaN(produtoData.quantidade)) {
+        alert('Por favor, preencha todos os campos corretamente.');
         return;
     }
 
-    const produtoData = {
-        id: id,
-        nome: nome,
-        valor: valor,
-        quantidade: quantidade
-    };
-
     try {
-        const response = await fetch(`${API_URL}/estoque`, {
+        const response = await fetch(`${API_URL}/estoque/produto`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(produtoData)
@@ -385,11 +242,224 @@ async function manipularEstoque(event) {
 
         if (response.ok) {
             alert(`Produto ${result.mensagem}`);
-            estoqueForm.reset(); // Limpa o formulário após o sucesso
-            visualizarEstoque(); // Supondo que você tenha essa função para atualizar a tabela
+            estoqueForm.reset();
+            visualizarEstoque();
+            verAlertasEstoque();
         } else {
             alert(`Erro: ${result.erro}`);
         }
+    } catch (error) {
+        alert('Erro de comunicação com a API.');
+        console.error('Erro:', error);
+    }
+}
+
+async function verAlertasEstoque() {
+    try {
+        const response = await fetch(`${API_URL}/estoque/alerta`);
+        const result = await response.json();
+
+        if (response.ok && result.produtos.length > 0) {
+            const listaAlerta = result.produtos.map(p => `${p.nome} (Qtd: ${p.quantidade})`).join('<br>');
+            alertaInfoDiv.innerHTML = `<h3>Produtos com Estoque Baixo:</h3><p>${listaAlerta}</p>`;
+            alertaInfoDiv.style.display = 'block';
+        } else {
+            alertaInfoDiv.innerHTML = `<p>${result.mensagem}</p>`;
+            alertaInfoDiv.style.display = 'none'; // Esconde se não houver alerta
+        }
+    } catch (error) {
+        alertaInfoDiv.innerHTML = `<p class="erro">Erro ao buscar alertas.</p>`;
+        console.error('Erro:', error);
+    }
+}
+
+// Funções de Relatórios
+// ---
+
+async function carregarHistoricoVendasDiarias() {
+    try {
+        const response = await fetch(`${API_URL}/relatorios/diario`);
+        if (!response.ok) {
+            throw new Error(`Erro de rede: ${response.status} ${response.statusText}`);
+        }
+        const result = await response.json();
+        historicoVendasDiariasUl.innerHTML = '';
+        let totalDiario = 0;
+
+        if (result.vendas && result.vendas.length > 0) {
+            result.vendas.forEach(venda => {
+                const li = document.createElement('li');
+                li.classList.toggle('cancelada', venda.status === 'cancelada');
+
+                const valorTotal = venda.valor_total.toFixed(2);
+                const dataHora = new Date(venda.data_hora);
+                const hora = dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+                let itensVendaHTML = `<ul class="detalhes-venda-lista">`;
+                venda.itens_vendidos.forEach(item => {
+                    itensVendaHTML += `<li>${item.quantidade}x ${item.nome}</li>`;
+                });
+                itensVendaHTML += `</ul>`;
+
+                let observacaoCancelamentoHTML = '';
+                if (venda.status === 'cancelada' && venda.observacao_cancelamento) {
+                    observacaoCancelamentoHTML = `<p class="observacao-cancelamento"><span>Motivo:</span> ${venda.observacao_cancelamento}</p>`;
+                }
+
+                li.innerHTML = `
+                    <div class="venda-resumo">
+                        <span class="venda-hora">${hora}</span>
+                        <span class="venda-valor">R$ ${valorTotal}</span>
+                        <button class="btn-toggle-detalhes">Detalhes</button>
+                        <button class="btn-cancelar" onclick="abrirModalSenha(${venda.id})">Cancelar</button>
+                    </div>
+                    <div class="venda-detalhes" style="display:none;">
+                        ${itensVendaHTML}
+                        ${observacaoCancelamentoHTML}
+                    </div>
+                `;
+
+                li.querySelector('.btn-toggle-detalhes').addEventListener('click', () => {
+                    const detalhes = li.querySelector('.venda-detalhes');
+                    detalhes.style.display = detalhes.style.display === 'block' ? 'none' : 'block';
+                });
+
+                historicoVendasDiariasUl.appendChild(li);
+
+                if (venda.status !== 'cancelada') {
+                    totalDiario += venda.valor_total;
+                }
+            });
+        } else {
+            const li = document.createElement('li');
+            li.textContent = "Nenhuma venda registrada hoje.";
+            historicoVendasDiariasUl.appendChild(li);
+        }
+
+        valorFechamentoCaixaSpan.textContent = totalDiario.toFixed(2);
+    } catch (error) {
+        console.error('Erro ao buscar histórico de vendas diárias:', error);
+        historicoVendasDiariasUl.innerHTML = `<li class="erro">Erro ao carregar o histórico.</li>`;
+        valorFechamentoCaixaSpan.textContent = '0.00';
+    }
+}
+
+async function gerarRelatorioMensal() {
+    try {
+        const response = await fetch(`${API_URL}/relatorios/mensal`);
+        const result = await response.json();
+        exibirRelatorio(result, 'Relatório de Vendas Mensais');
+    } catch (error) {
+        console.error('Erro ao gerar relatório mensal:', error);
+        relatorioOutputDiv.innerHTML = `<p class="erro">Erro ao gerar o relatório mensal.</p>`;
+    }
+}
+
+async function gerarRelatorioGeral() {
+    try {
+        const response = await fetch(`${API_URL}/relatorios/geral`);
+        const result = await response.json();
+        exibirRelatorio(result, 'Relatório de Vendas Geral');
+    } catch (error) {
+        console.error('Erro ao gerar relatório geral:', error);
+        relatorioOutputDiv.innerHTML = `<p class="erro">Erro ao gerar o relatório geral.</p>`;
+    }
+}
+
+async function gerarRelatorioDelivery() {
+    try {
+        const response = await fetch(`${API_URL}/relatorios/delivery`);
+        const result = await response.json();
+        exibirRelatorio(result, 'Relatório de Vendas Delivery');
+    } catch (error) {
+        console.error('Erro ao gerar relatório delivery:', error);
+        relatorioOutputDiv.innerHTML = `<p class="erro">Erro ao gerar o relatório delivery.</p>`;
+    }
+}
+
+function exibirRelatorio(relatorio, titulo) {
+    if (!relatorio || !relatorio.vendas || relatorio.vendas.length === 0) {
+        relatorioOutputDiv.innerHTML = `<p>${relatorio.mensagem}</p>`;
+        return;
+    }
+
+    let html = `
+        <h3>${titulo}</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Valor Total</th>
+                    <th>Forma de Pagamento</th>
+                    <th>Tipo</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    relatorio.vendas.forEach(venda => {
+        const dataHora = new Date(venda.data_hora);
+        const dataFormatada = dataHora.toLocaleDateString('pt-BR');
+        const horaFormatada = dataHora.toLocaleTimeString('pt-BR');
+        html += `
+            <tr class="${venda.status}">
+                <td>${dataFormatada} ${horaFormatada}</td>
+                <td>R$ ${venda.valor_total.toFixed(2)}</td>
+                <td>${venda.forma_pagamento}</td>
+                <td>${venda.tipo_venda}</td>
+                <td>${venda.status}</td>
+            </tr>
+        `;
+    });
+    html += `
+            </tbody>
+        </table>
+    `;
+
+    relatorioOutputDiv.innerHTML = html;
+}
+
+
+// Funções do Modal de Senha
+// ---
+function abrirModalSenha(vendaId) {
+    vendaParaCancelarId = vendaId;
+    modalSenha.style.display = 'flex';
+    senhaInput.focus();
+}
+
+function fecharModalSenha() {
+    modalSenha.style.display = 'none';
+    senhaInput.value = '';
+    vendaParaCancelarId = null;
+}
+
+async function confirmarCancelamento() {
+    const senha = senhaInput.value;
+    if (!senha) {
+        alert('Por favor, digite a senha mestre.');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/vendas/cancelar/${vendaParaCancelarId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ senha_mestre: senha })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert(result.mensagem);
+            fecharModalSenha();
+            carregarHistoricoVendasDiarias(); // Atualiza a lista
+            visualizarEstoque(); // Atualiza o estoque
+        } else {
+            alert(`Erro: ${result.erro}`);
+            senhaInput.value = ''; // Limpa a senha
+        }
+
     } catch (error) {
         alert('Erro de comunicação com a API.');
         console.error('Erro:', error);
@@ -400,19 +470,24 @@ async function manipularEstoque(event) {
 adicionarProdutoBtn.addEventListener('click', adicionarAoCarrinho);
 finalizarVendaBtn.addEventListener('click', finalizarVenda);
 lancarSaidaDeliveryBtn.addEventListener('click', lancarSaidaDelivery);
-
-// Otimiza o cálculo do troco para ser dinâmico
-valorRecebidoInput.addEventListener('input', calcularTroco);
-formaPagamentoSelect.addEventListener('change', calcularTroco);
-
-// Modal de Senha
-fecharModalBtn.addEventListener('click', fecharModalSenha);
-
-// NOVO: Adiciona o evento de submit para o formulário de estoque
 estoqueForm.addEventListener('submit', manipularEstoque);
+document.getElementById('visualizar-estoque').addEventListener('click', visualizarEstoque);
+document.getElementById('alerta-estoque').addEventListener('click', verAlertasEstoque);
+document.getElementById('relatorio-diario').addEventListener('click', carregarHistoricoVendasDiarias);
+document.getElementById('relatorio-mensal').addEventListener('click', gerarRelatorioMensal);
+document.getElementById('relatorio-geral').addEventListener('click', gerarRelatorioGeral);
+document.getElementById('relatorio-delivery').addEventListener('click', gerarRelatorioDelivery);
+formaPagamentoSelect.addEventListener('change', () => {
+    valorRecebidoInput.style.display = formaPagamentoSelect.value === 'Dinheiro' ? 'block' : 'none';
+    calcularTroco();
+});
+valorRecebidoInput.addEventListener('input', calcularTroco);
+fecharModalBtn.addEventListener('click', fecharModalSenha);
+confirmarCancelamentoBtn.addEventListener('click', confirmarCancelamento);
 
 // Carrega o histórico de vendas ao carregar a página
 document.addEventListener('DOMContentLoaded', () => {
     carregarHistoricoVendasDiarias();
-    // A função visualizarEstoque() deve ser adicionada e chamada aqui se for o caso
+    visualizarEstoque();
+    verAlertasEstoque();
 });
