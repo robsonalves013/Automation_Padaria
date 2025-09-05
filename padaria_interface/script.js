@@ -320,6 +320,7 @@ async function lancarSaidaDelivery() {
         DOM.produtoIdDeliveryInput.value = '';
         DOM.produtoQuantidadeDeliveryInput.value = 1;
         visualizarEstoque();
+        carregarHistoricoVendasDiarias(); // NOVO: Atualiza o painel de histórico
     } catch (error) {
         // O erro já é tratado na função fetchData
     }
