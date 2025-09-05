@@ -143,6 +143,7 @@ async function finalizarVenda() {
             carrinho = [];
             atualizarCarrinhoUI();
             trocoInfo.style.display = 'none';
+            // Chama a função para atualizar o histórico de vendas após o sucesso
             carregarHistoricoVendasDiarias();
         } else {
             alert(`Erro na venda: ${result.erro}`);
@@ -223,6 +224,8 @@ async function lancarSaidaDelivery() {
             produtoIdDeliveryInput.value = '';
             produtoQuantidadeDeliveryInput.value = 1;
             visualizarEstoque();
+            // ADICIONADO: Chama a função para atualizar o histórico de vendas após o sucesso
+            carregarHistoricoVendasDiarias();
         } else {
             alert(`Erro: ${result.erro}`);
         }
