@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify
-from models import Venda, VendaItem, ProdutoEstoque
+from models import db, Venda, VendaItem, ProdutoEstoque
 from datetime import datetime, date, timedelta
 
 relatorios_bp = Blueprint('relatorios_bp', __name__)
