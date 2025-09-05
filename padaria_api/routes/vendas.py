@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from models import db, Venda, VendaItem, ProdutoEstoque
-from datetime import datetime, date, timedelta
+from datetime import datetime
+import pytz
 
 vendas_bp = Blueprint('vendas_bp', __name__)
 
@@ -27,11 +28,15 @@ def finalizar_venda_balcao():
         valor_total += produto.valor * item['quantidade']
 
     try:
+        # Define o fuso horário de São Paulo
+        fuso_horario_sp = pytz.timezone('America/Sao_Paulo')
+        agora = datetime.now(fuso_horario_sp)
+
         nova_venda = Venda(
             valor_total=valor_total,
             forma_pagamento=forma_pagamento,
             valor_recebido=valor_recebido,
-            data_hora=datetime.now(),
+            data_hora=agora,
             tipo_venda='balcao',
             plataforma=None
         )
@@ -50,8 +55,49 @@ def finalizar_venda_balcao():
             db.session.add(item_venda)
 
         db.session.commit()
-        return jsonify({'mensagem': 'Venda finalizada com sucesso!', 'venda_id': nova_venda.id})
-    
+        return jsonify({'mensagem': 'Venda finalizada com sucesso!', 'venda_id': nova_venda.id}), 201
+
     except Exception as e:
         db.session.rollback()
-        return jsonify({'erro': f'Erro ao processar a venda: {str(e)}'}), 500
+        return jsonify({'erro': str(e)}), 500
+
+@vendas_bp.route('/vendas/cancelar/<int:venda_id>', methods=['POST'])
+def cancelar_venda(venda_id):
+    """
+    Cancela uma venda pelo seu ID, revertendo a quantidade de estoque.
+    Requer a senha mestre.
+    """
+    from config import Config
+
+    data = request.get_json()
+    senha_informada = data.get('senha_mestre')
+
+    if not senha_informada or senha_informada != Config.MASTER_PASSWORD:
+        return jsonify({'erro': 'Senha mestre incorreta.'}), 401
+    
+    venda = Venda.query.get(venda_id)
+    if not venda:
+        return jsonify({'erro': 'Venda não encontrada.'}), 404
+
+    try:
+        # 1. Reverter o estoque para cada item da venda
+        for item_venda in venda.itens_vendidos:
+            produto = ProdutoEstoque.query.get(item_venda.produto_id)
+            if produto:
+                produto.quantidade += item_venda.quantidade
+
+        # 2. Deletar os itens da venda
+        for item_venda in venda.itens_vendidos:
+            db.session.delete(item_venda)
+
+        # 3. Deletar a venda
+        db.session.delete(venda)
+
+        # 4. Comitar a transação
+        db.session.commit()
+
+        return jsonify({'mensagem': f'Venda #{venda_id} cancelada com sucesso! Estoque revertido.'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'erro': 'Erro ao cancelar a venda. ' + str(e)}), 500

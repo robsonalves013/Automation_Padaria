@@ -184,6 +184,7 @@ async function carregarHistoricoVendasDiarias() {
                     <div class="venda-resumo">
                         <strong>[${hora}]</strong> Venda #${venda.id} - R$ ${valorTotal}
                         <button class="btn-detalhes">+ Detalhes</button>
+                        <button class="btn-cancelar" data-venda-id="${venda.id}">Cancelar Venda</button>
                     </div>
                     ${itensVendaHTML}
                 `;
@@ -203,6 +204,14 @@ async function carregarHistoricoVendasDiarias() {
                         listaItens.style.display = 'none';
                         event.target.textContent = '+ Detalhes';
                     }
+                });
+            });
+
+            // Adiciona o evento de clique aos botões de cancelar
+            document.querySelectorAll('.btn-cancelar').forEach(btn => {
+                btn.addEventListener('click', (event) => {
+                    const vendaId = event.target.dataset.vendaId;
+                    cancelarVenda(vendaId);
                 });
             });
 
@@ -254,6 +263,33 @@ async function lancarSaidaDelivery() {
             carregarHistoricoVendasDiarias();
         } else {
             alert(`Erro: ${result.erro}`);
+        }
+    } catch (error) {
+        alert('Erro de comunicação com a API.');
+        console.error('Erro:', error);
+    }
+}
+
+async function cancelarVenda(vendaId) {
+    const senhaMestre = prompt('Para cancelar a venda, digite a senha mestre:');
+    if (!senhaMestre) {
+        return; // Usuário cancelou
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/vendas/cancelar/${vendaId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ senha_mestre: senhaMestre })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert(result.mensagem);
+            carregarHistoricoVendasDiarias(); // Recarrega o histórico
+        } else {
+            alert(`Erro ao cancelar a venda: ${result.erro}`);
         }
     } catch (error) {
         alert('Erro de comunicação com a API.');
