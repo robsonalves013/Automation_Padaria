@@ -32,6 +32,12 @@ const produtoIdDeliveryInput = document.getElementById('produto-id-delivery');
 const produtoQuantidadeDeliveryInput = document.getElementById('produto-quantidade-delivery');
 const lancarSaidaDeliveryBtn = document.getElementById('lancar-saida-delivery');
 
+// Novos elementos do Modal de Senha
+const modalSenha = document.getElementById('modal-senha');
+const senhaInput = document.getElementById('senha-input');
+const confirmarCancelamentoBtn = document.getElementById('confirmar-cancelamento-btn');
+const fecharModalBtn = document.getElementById('fechar-modal-btn');
+
 
 let carrinho = [];
 
@@ -171,7 +177,8 @@ async function carregarHistoricoVendasDiarias() {
             result.vendas.forEach(venda => {
                 const li = document.createElement('li');
                 const valorTotal = venda.valor_total.toFixed(2);
-                const hora = new Date(venda.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                const dataHora = new Date(venda.data_hora);
+                const hora = dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
                 
                 // CRIA A LISTA DE ITENS OCULTA
                 let itensVendaHTML = `<ul style="display: none;" class="detalhes-venda-lista">`;
@@ -210,8 +217,8 @@ async function carregarHistoricoVendasDiarias() {
             // Adiciona o evento de clique aos botões de cancelar
             document.querySelectorAll('.btn-cancelar').forEach(btn => {
                 btn.addEventListener('click', (event) => {
-                    const vendaId = event.target.dataset.vendaId;
-                    cancelarVenda(vendaId);
+                    const vendaId = event.target.dataset.venda-id;
+                    abrirModalSenha(vendaId);
                 });
             });
 
@@ -270,33 +277,52 @@ async function lancarSaidaDelivery() {
     }
 }
 
-async function cancelarVenda(vendaId) {
-    const senhaMestre = prompt('Para cancelar a venda, digite a senha mestre:');
-    if (!senhaMestre) {
-        return; // Usuário cancelou
-    }
+// Funções para o Modal de Senha
+function abrirModalSenha(vendaId) {
+    modalSenha.style.display = 'flex';
+    senhaInput.value = ''; // Limpa o campo
+    senhaInput.focus();
 
-    try {
-        const response = await fetch(`${API_URL}/vendas/cancelar/${vendaId}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ senha_mestre: senhaMestre })
-        });
+    // Remove listeners antigos para evitar duplicação
+    const oldConfirmBtn = confirmarCancelamentoBtn;
+    const newConfirmBtn = oldConfirmBtn.cloneNode(true);
+    oldConfirmBtn.parentNode.replaceChild(newConfirmBtn, oldConfirmBtn);
+    
+    // Adiciona o novo listener com o vendaId correto
+    newConfirmBtn.addEventListener('click', async () => {
+        const senhaMestre = senhaInput.value;
+        if (senhaMestre) {
+            fecharModalSenha();
+            try {
+                const response = await fetch(`${API_URL}/vendas/cancelar/${vendaId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ senha_mestre: senhaMestre })
+                });
 
-        const result = await response.json();
+                const result = await response.json();
 
-        if (response.ok) {
-            alert(result.mensagem);
-            carregarHistoricoVendasDiarias(); // Recarrega o histórico
+                if (response.ok) {
+                    alert(result.mensagem);
+                    carregarHistoricoVendasDiarias();
+                } else {
+                    alert(`Erro ao cancelar a venda: ${result.erro}`);
+                }
+            } catch (error) {
+                alert('Erro de comunicação com a API.');
+                console.error('Erro:', error);
+            }
         } else {
-            alert(`Erro ao cancelar a venda: ${result.erro}`);
+            alert('Por favor, digite a senha mestre.');
         }
-    } catch (error) {
-        alert('Erro de comunicação com a API.');
-        console.error('Erro:', error);
-    }
+    });
 }
 
+function fecharModalSenha() {
+    modalSenha.style.display = 'none';
+}
+
+fecharModalBtn.addEventListener('click', fecharModalSenha);
 
 // Funções de Estoque
 // ---
