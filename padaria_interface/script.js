@@ -353,6 +353,49 @@ function fecharModalSenha() {
     modalSenha.style.display = 'none';
 }
 
+// NOVO: Adiciona a função para manipular o formulário de estoque
+async function manipularEstoque(event) {
+    event.preventDefault(); // Impede o envio padrão do formulário
+
+    const id = formIdInput.value.trim();
+    const nome = formNomeInput.value.trim();
+    const valor = parseFloat(formValorInput.value);
+    const quantidade = parseInt(formQuantidadeInput.value);
+
+    if (!id || !nome || isNaN(valor) || isNaN(quantidade)) {
+        alert('Por favor, preencha todos os campos do formulário de estoque com valores válidos.');
+        return;
+    }
+
+    const produtoData = {
+        id: id,
+        nome: nome,
+        valor: valor,
+        quantidade: quantidade
+    };
+
+    try {
+        const response = await fetch(`${API_URL}/estoque`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(produtoData)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert(`Produto ${result.mensagem}`);
+            estoqueForm.reset(); // Limpa o formulário após o sucesso
+            visualizarEstoque(); // Supondo que você tenha essa função para atualizar a tabela
+        } else {
+            alert(`Erro: ${result.erro}`);
+        }
+    } catch (error) {
+        alert('Erro de comunicação com a API.');
+        console.error('Erro:', error);
+    }
+}
+
 // Event Listeners
 adicionarProdutoBtn.addEventListener('click', adicionarAoCarrinho);
 finalizarVendaBtn.addEventListener('click', finalizarVenda);
@@ -364,6 +407,9 @@ formaPagamentoSelect.addEventListener('change', calcularTroco);
 
 // Modal de Senha
 fecharModalBtn.addEventListener('click', fecharModalSenha);
+
+// NOVO: Adiciona o evento de submit para o formulário de estoque
+estoqueForm.addEventListener('submit', manipularEstoque);
 
 // Carrega o histórico de vendas ao carregar a página
 document.addEventListener('DOMContentLoaded', () => {
