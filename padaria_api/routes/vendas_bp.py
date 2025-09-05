@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from models import db, Venda, VendaItem, ProdutoEstoque
+from extensions import db
 from datetime import datetime
 import pytz
 from config import Config

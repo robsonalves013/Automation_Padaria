@@ -1,4 +1,4 @@
-from app import db
+from extensions import db  # Corrigido para importar de extensions.py
 from datetime import datetime
 import pytz
 

@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from models import Venda, VendaItem, ProdutoEstoque, db
+from extensions import db
 from datetime import datetime, date, timedelta
 import pytz
 import smtplib
