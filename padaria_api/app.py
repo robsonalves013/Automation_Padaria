@@ -1,35 +1,36 @@
-# Novo app.py
-import os
 from flask import Flask
 from flask_cors import CORS
-from flask_migrate import Migrate
-from models import db
+from flask_sqlalchemy import SQLAlchemy
 from config import Config
-from routes.estoque import estoque_bp
-from routes.vendas import vendas_bp
-from routes.relatorios import relatorios_bp
+from routes.vendas_bp import vendas_bp
+from routes.estoque_bp import estoque_bp
+from routes.relatorios_bp import relatorios_bp
 
-# Inicializa o aplicativo Flask e o CORS
+# Inicializa o Flask e o CORS
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+# Configura o banco de dados
 app.config.from_object(Config)
+db = SQLAlchemy(app)
 
-# Inicializa o SQLAlchemy e as migrações
-db.init_app(app)
-migrate = Migrate(app, db)
-
-# Registra os Blueprints
-app.register_blueprint(estoque_bp, url_prefix='/api')
+# Registra os Blueprints para as rotas
 app.register_blueprint(vendas_bp, url_prefix='/api')
+app.register_blueprint(estoque_bp, url_prefix='/api')
 app.register_blueprint(relatorios_bp, url_prefix='/api')
 
+
 @app.route('/')
-def index():
-    return "API do Sistema de Gestão da Padaria Majurak"
+def home():
+    return 'API da Padaria Majurak está no ar!'
 
 if __name__ == '__main__':
-    # Cria o banco de dados se ele não existir
     with app.app_context():
-        if not os.path.exists(Config.DATABASE_PATH):
+        # Cria as tabelas do banco de dados se elas não existirem
+        try:
             db.create_all()
+            print("Tabelas do banco de dados criadas com sucesso.")
+        except Exception as e:
+            print(f"Erro ao criar tabelas: {e}")
+            
     app.run(debug=True)
