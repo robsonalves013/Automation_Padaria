@@ -15,7 +15,7 @@ DATA_FILE = 'data.json'
 # Dicionários para armazenar os dados do aplicativo
 estoque = {}
 vendas = {}
-senha_mestre = "12345" # Senha para operações administrativas
+senha_mestre = "120724" # Senha para operações administrativas
 
 def carregar_dados():
     """
