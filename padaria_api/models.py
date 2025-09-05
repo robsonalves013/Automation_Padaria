@@ -1,54 +1,25 @@
-from extensions import db  # Corrigido para importar de extensions.py
+from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-import pytz
 
-fuso_horario_sp = pytz.timezone('America/Sao_Paulo')
+db = SQLAlchemy()
 
-class ProdutoEstoque(db.Model):
-    __tablename__ = 'produto_estoque'
+class Produto(db.Model):
     id = db.Column(db.String(50), primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
     valor = db.Column(db.Float, nullable=False)
-    quantidade = db.Column(db.Integer, nullable=False)
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'nome': self.nome,
-            'valor': self.valor,
-            'quantidade': self.quantidade
-        }
+    quantidade = db.Column(db.Integer, default=0)
 
 class Venda(db.Model):
-    __tablename__ = 'venda'
     id = db.Column(db.Integer, primary_key=True)
+    data_hora = db.Column(db.DateTime, default=datetime.utcnow)
     valor_total = db.Column(db.Float, nullable=False)
     forma_pagamento = db.Column(db.String(50), nullable=False)
-    valor_recebido = db.Column(db.Float, nullable=False)
-    data_hora = db.Column(db.DateTime, default=lambda: datetime.now(fuso_horario_sp))
-    tipo_venda = db.Column(db.String(50), nullable=False, default='balcao')
-    plataforma = db.Column(db.String(50))
-    status = db.Column(db.String(50), default='concluida')
-    observacao_cancelamento = db.Column(db.String(255))
-    
-    itens_vendidos = db.relationship('VendaItem', backref='venda', lazy=True)
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'valor_total': self.valor_total,
-            'forma_pagamento': self.forma_pagamento,
-            'valor_recebido': self.valor_recebido,
-            'data_hora': self.data_hora,
-            'tipo_venda': self.tipo_venda,
-            'plataforma': self.plataforma,
-            'status': self.status,
-            'observacao_cancelamento': self.observacao_cancelamento
-        }
+    itens_vendidos = db.relationship('ItemVendido', backref='venda', lazy=True)
 
-class VendaItem(db.Model):
-    __tablename__ = 'venda_item'
+class ItemVendido(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     venda_id = db.Column(db.Integer, db.ForeignKey('venda.id'), nullable=False)
-    produto_id = db.Column(db.String(50), db.ForeignKey('produto_estoque.id'), nullable=False)
+    produto_id = db.Column(db.String(50), nullable=False)
+    nome = db.Column(db.String(100), nullable=False)
     quantidade = db.Column(db.Integer, nullable=False)
+    valor_unitario = db.Column(db.Float, nullable=False)
