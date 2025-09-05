@@ -288,19 +288,39 @@ async function carregarAlertasEstoque() {
     }
 }
 
+// A função salvarNovoProduto foi corrigida aqui
 async function salvarNovoProduto() {
-    const produtoData = {
-        id: DOM.novoProdutoIdInput.value.trim(),
-        nome: DOM.novoProdutoNomeInput.value.trim(),
-        valor: parseFloat(DOM.novoProdutoValorInput.value),
-        quantidade: parseInt(DOM.novoProdutoQuantidadeInput.value)
-    };
+    const id = DOM.novoProdutoIdInput.value.trim();
+    const nome = DOM.novoProdutoNomeInput.value.trim();
+    const valor = DOM.novoProdutoValorInput.value.trim();
+    const quantidade = DOM.novoProdutoQuantidadeInput.value.trim();
 
-    // Validação extra no front-end para evitar requisições desnecessárias
-    if (!produtoData.id || !produtoData.nome || isNaN(produtoData.valor) || isNaN(produtoData.quantidade)) {
-        mostrarToast('Preencha todos os campos corretamente.', 'error');
+    // 1. Validação de campos vazios
+    if (!id || !nome || !valor || !quantidade) {
+        mostrarToast('Por favor, preencha todos os campos.', 'error');
         return;
     }
+
+    const valorNumerico = parseFloat(valor);
+    const quantidadeNumerica = parseInt(quantidade, 10);
+
+    // 2. Validação de tipo de dado
+    if (isNaN(valorNumerico) || valorNumerico <= 0) {
+        mostrarToast('Valor do produto deve ser um número positivo.', 'error');
+        return;
+    }
+
+    if (isNaN(quantidadeNumerica) || quantidadeNumerica < 0) {
+        mostrarToast('Quantidade deve ser um número inteiro e não negativo.', 'error');
+        return;
+    }
+
+    const produtoData = {
+        id: id,
+        nome: nome,
+        valor: valorNumerico,
+        quantidade: quantidadeNumerica
+    };
 
     try {
         const response = await fetch(`${API_URL}/estoque/adicionar`, {
@@ -313,22 +333,27 @@ async function salvarNovoProduto() {
         if (response.ok) {
             mostrarToast(data.mensagem);
             DOM.modalEstoque.style.display = 'none';
+            
             // Limpa os campos do formulário após o sucesso
             DOM.novoProdutoIdInput.value = '';
             DOM.novoProdutoNomeInput.value = '';
             DOM.novoProdutoValorInput.value = '';
             DOM.novoProdutoQuantidadeInput.value = '';
             
+            // Recarrega os dados para exibir o novo produto
             carregarEstoque();
             carregarAlertasEstoque();
         } else {
+            // A API retornou um erro específico
             mostrarToast(data.erro, 'error');
         }
     } catch (error) {
-        mostrarToast('Erro ao adicionar produto ao estoque. Tente novamente.', 'error');
-        console.error('Erro:', error);
+        // Erro de rede (CORS, servidor offline, etc.)
+        mostrarToast('Erro de rede. Verifique a conexão com o servidor.', 'error');
+        console.error('Erro ao adicionar produto:', error);
     }
 }
+
 
 // --- Lógica de Relatórios ---
 async function gerarRelatorio(tipo) {
