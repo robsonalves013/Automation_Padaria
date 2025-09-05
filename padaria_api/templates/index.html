@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Gestão da Padaria Majurak</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="{{ url_for('static', filename='script.js') }}" defer></script>
 </head>
 <body>
@@ -16,46 +17,62 @@
     </header>
 
     <main>
-        <div class="container">
-            <div id="secao-vendas" class="card">
-                <h2>Vendas</h2>
-                <div class="input-group">
-                    <label for="produto-id">ID do Produto:</label>
-                    <input type="text" id="produto-id" placeholder="Ex: PaoFrances" required>
+        <div class="sidebar">
+            <button class="tab-button active" data-tab="secao-vendas">
+                <i class="fas fa-cash-register"></i> Vendas
+            </button>
+            <button class="tab-button" data-tab="secao-estoque">
+                <i class="fas fa-boxes"></i> Estoque
+            </button>
+            <button class="tab-button" data-tab="secao-relatorios">
+                <i class="fas fa-chart-line"></i> Relatórios
+            </button>
+        </div>
+
+        <div class="content-area">
+            <div id="secao-vendas" class="tab-content active card">
+                <h2><i class="fas fa-cash-register"></i> Vendas</h2>
+                <div class="input-grid">
+                    <div class="input-group">
+                        <label for="produto-id">ID do Produto:</label>
+                        <input type="text" id="produto-id" placeholder="Ex: PaoFrances" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="produto-quantidade">Quantidade:</label>
+                        <input type="number" id="produto-quantidade" value="1" min="1" required>
+                    </div>
                 </div>
-                <div class="input-group">
-                    <label for="produto-quantidade">Quantidade:</label>
-                    <input type="number" id="produto-quantidade" value="1" min="1" required>
-                </div>
-                <button id="adicionar-produto" class="btn">Adicionar ao Carrinho</button>
+                <button id="adicionar-produto" class="btn btn-primary"><i class="fas fa-cart-plus"></i> Adicionar ao Carrinho</button>
                 
                 <hr>
 
                 <h3>Carrinho</h3>
                 <ul id="lista-carrinho" class="carrinho"></ul>
-                <p>Valor Total: R$ <span id="valor-total">0.00</span></p>
+                <p class="total-carrinho">Valor Total: <span id="valor-total">R$ 0,00</span></p>
 
                 <hr>
 
-                <div class="input-group">
-                    <label for="forma-pagamento">Forma de Pagamento:</label>
-                    <select id="forma-pagamento">
-                        <option value="Dinheiro">Dinheiro</option>
-                        <option value="Cartao">Cartão</option>
-                        <option value="Pix">Pix</option>
-                    </select>
-                </div>
-                <div class="input-group" id="valor-recebido-group">
-                    <label for="valor-recebido">Valor Recebido (Dinheiro):</label>
-                    <input type="number" id="valor-recebido" step="0.01">
+                <div class="input-grid">
+                    <div class="input-group">
+                        <label for="forma-pagamento">Forma de Pagamento:</label>
+                        <select id="forma-pagamento">
+                            <option value="Dinheiro">Dinheiro</option>
+                            <option value="Cartao">Cartão</option>
+                            <option value="Pix">Pix</option>
+                        </select>
+                    </div>
+                    <div class="input-group" id="valor-recebido-group">
+                        <label for="valor-recebido">Valor Recebido (Dinheiro):</label>
+                        <input type="number" id="valor-recebido" step="0.01">
+                    </div>
                 </div>
                 <p id="troco-info" class="info"></p>
 
-                <button id="finalizar-venda" class="btn btn-success">Finalizar Venda</button>
+                <button id="finalizar-venda" class="btn btn-success"><i class="fas fa-check-circle"></i> Finalizar Venda</button>
             </div>
 
-            <div id="secao-estoque" class="card">
-                <h2>Gerenciar Estoque</h2>
+            <div id="secao-estoque" class="tab-content card">
+                <h2><i class="fas fa-boxes"></i> Gerenciar Estoque</h2>
                 <div id="alerta-info" class="alerta"></div>
                 
                 <table id="tabela-estoque" class="tabela">
@@ -71,25 +88,27 @@
                     <tbody>
                         </tbody>
                 </table>
+                <button id="adicionar-novo-produto-btn" class="btn btn-primary"><i class="fas fa-plus-circle"></i> Adicionar Novo Produto</button>
             </div>
             
-            <div id="secao-relatorios" class="card">
-                <h2>Relatórios</h2>
+            <div id="secao-relatorios" class="tab-content card">
+                <h2><i class="fas fa-chart-line"></i> Relatórios</h2>
                 <div class="botoes-relatorios">
-                    <button id="relatorio-diario-btn" class="btn btn-info">Relatório Diário</button>
-                    <button id="relatorio-mensal-btn" class="btn btn-info">Relatório Mensal</button>
-                    <button id="relatorio-geral-btn" class="btn btn-info">Relatório Geral</button>
-                    <button id="relatorio-delivery-btn" class="btn btn-info">Vendas Delivery</button>
-                    <hr>
-                    <div class="input-group">
-                        <label for="email-destinatario">Enviar Relatório para Email:</label>
-                        <input type="email" id="email-destinatario" placeholder="seuemail@exemplo.com">
-                    </div>
-                    <button id="enviar-email-btn" class="btn btn-primary">Enviar por Email</button>
+                    <button id="relatorio-diario-btn" class="btn btn-info"><i class="fas fa-calendar-day"></i> Diário</button>
+                    <button id="relatorio-mensal-btn" class="btn btn-info"><i class="fas fa-calendar-alt"></i> Mensal</button>
+                    <button id="relatorio-geral-btn" class="btn btn-info"><i class="fas fa-globe"></i> Geral</button>
+                    <button id="relatorio-delivery-btn" class="btn btn-info"><i class="fas fa-truck"></i> Delivery</button>
                 </div>
+                <hr>
+                <div class="input-group">
+                    <label for="email-destinatario">Enviar Relatório por Email:</label>
+                    <input type="email" id="email-destinatario" placeholder="seuemail@exemplo.com">
+                </div>
+                <button id="enviar-email-btn" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Enviar por Email</button>
+                <hr>
                 <div id="historico-vendas-diarias" class="relatorio-historico">
-                    <h3>Histórico de Vendas Diárias</h3>
-                    <ul id="lista-vendas-diarias">
+                    <h3><i class="fas fa-history"></i> Histórico de Vendas Diárias</h3>
+                    <ul id="lista-vendas-diarias" class="historico-lista">
                         </ul>
                 </div>
             </div>
@@ -98,12 +117,39 @@
 
     <div id="modal-senha" class="modal-overlay">
         <div class="modal-content">
-            <h3>Cancelar Venda</h3>
+            <h3><i class="fas fa-exclamation-triangle"></i> Cancelar Venda</h3>
             <p>Digite a senha mestre para confirmar o cancelamento.</p>
             <input type="password" id="senha-mestre" placeholder="Senha mestre">
             <div class="modal-buttons">
-                <button id="confirmar-cancelamento-btn" class="btn btn-danger">Confirmar</button>
-                <button id="fechar-modal-btn" class="btn">Fechar</button>
+                <button id="confirmar-cancelamento-btn" class="btn btn-danger"><i class="fas fa-check"></i> Confirmar</button>
+                <button id="fechar-modal-btn" class="btn btn-secondary"><i class="fas fa-times"></i> Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-produto" class="modal-overlay">
+        <div class="modal-content">
+            <h3><i class="fas fa-box"></i> Gerenciar Produto</h3>
+            <div class="input-group">
+                <label for="modal-produto-id">ID do Produto:</label>
+                <input type="text" id="modal-produto-id" required>
+            </div>
+            <div class="input-group">
+                <label for="modal-produto-nome">Nome do Produto:</label>
+                <input type="text" id="modal-produto-nome" required>
+            </div>
+            <div class="input-group">
+                <label for="modal-produto-valor">Valor:</label>
+                <input type="number" id="modal-produto-valor" step="0.01" required>
+            </div>
+            <div class="input-group">
+                <label for="modal-produto-quantidade">Quantidade:</label>
+                <input type="number" id="modal-produto-quantidade" required>
+            </div>
+            <div class="modal-buttons">
+                <button id="salvar-produto-btn" class="btn btn-success"><i class="fas fa-save"></i> Salvar</button>
+                <button id="deletar-produto-btn" class="btn btn-danger" style="display:none;"><i class="fas fa-trash-alt"></i> Excluir</button>
+                <button id="fechar-modal-produto-btn" class="btn btn-secondary"><i class="fas fa-times"></i> Cancelar</button>
             </div>
         </div>
     </div>
