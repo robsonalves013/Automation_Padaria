@@ -63,6 +63,62 @@ def finalizar_venda_balcao():
         db.session.rollback()
         return jsonify({'erro': str(e)}), 500
 
+@vendas_bp.route('/vendas/delivery', methods=['POST'])
+def lancar_venda_delivery():
+    """
+    Lança uma venda de delivery (iFood/99food), apenas
+    diminuindo a quantidade do estoque sem registrar valor.
+    """
+    data = request.get_json()
+    produto_id = data.get('produto_id')
+    quantidade = data.get('quantidade')
+    plataforma = data.get('plataforma')
+
+    if not produto_id or not quantidade or quantidade < 1:
+        return jsonify({'erro': 'Dados de produto e quantidade inválidos.'}), 400
+
+    produto = ProdutoEstoque.query.get(produto_id)
+
+    if not produto:
+        return jsonify({'erro': f'Produto {produto_id} não encontrado no estoque.'}), 404
+    
+    if produto.quantidade < quantidade:
+        return jsonify({'erro': f'Produto {produto.nome} sem estoque suficiente. Disponível: {produto.quantidade}'}), 400
+
+    try:
+        # Diminui a quantidade do estoque
+        produto.quantidade -= quantidade
+
+        agora = datetime.now(fuso_horario_sp)
+        
+        # Cria um registro de venda com valor 0
+        nova_venda = Venda(
+            valor_total=0,
+            forma_pagamento='Plataforma Digital',
+            valor_recebido=0,
+            data_hora=agora,
+            tipo_venda='delivery',
+            plataforma=plataforma,
+            status='concluida'
+        )
+        db.session.add(nova_venda)
+        db.session.flush()
+
+        # Cria o item de venda
+        item_venda = VendaItem(
+            venda_id=nova_venda.id,
+            produto_id=produto_id,
+            quantidade=quantidade
+        )
+        db.session.add(item_venda)
+
+        db.session.commit()
+        return jsonify({'mensagem': 'Venda de delivery lançada com sucesso!', 'venda_id': nova_venda.id}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'erro': str(e)}), 500
+
 @vendas_bp.route('/vendas/cancelar/<int:venda_id>', methods=['POST'])
 def cancelar_venda(venda_id):
     """

@@ -17,7 +17,6 @@ app.config.from_object(Config)
 # Inicializa o SQLAlchemy e as migrações
 db.init_app(app)
 migrate = Migrate(app, db)
-CORS(app)
 
 # Registra os Blueprints
 app.register_blueprint(estoque_bp, url_prefix='/api')
