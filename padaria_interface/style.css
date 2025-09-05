@@ -9,14 +9,296 @@
     --accent-red: #D9534F; /* Para alertas, se necessário */
     --danger-red: #dc3545; /* Vermelho para cancelamento */
     --success-green: #28a745; /* Verde para sucesso */
+    --info-blue: #17a2b8; /* Azul para informações */
+    --card-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
-/* ... (código existente) ... */
+/* Base */
+body {
+    font-family: Arial, sans-serif;
+    background-color: var(--background-white);
+    color: var(--text-black);
+    margin: 0;
+    padding: 0;
+}
 
-/* Adicionado para os alertas de estoque e vendas */
+header {
+    background-color: var(--primary-brown);
+    color: white;
+    padding: 1rem;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.header-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+}
+
+.logo {
+    height: 50px;
+}
+
+main {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    display: grid;
+    gap: 2rem;
+}
+
+.card {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: var(--card-shadow);
+}
+
+/* Formulários e Inputs */
+.input-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+input, select {
+    padding: 10px;
+    border: 1px solid var(--border-light);
+    border-radius: 5px;
+    font-size: 1rem;
+    flex: 1;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: var(--secondary-brown);
+    box-shadow: 0 0 0 2px rgba(139, 69, 19, 0.2);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.form-grid button {
+    grid-column: 1 / -1;
+}
+
+/* Botões */
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+}
+
+.btn-primary {
+    background-color: var(--primary-brown);
+    color: white;
+}
+
+.btn-secondary {
+    background-color: var(--border-light);
+    color: var(--text-black);
+}
+
+.btn-add {
+    background-color: var(--success-green);
+    color: white;
+}
+
+.btn-confirm {
+    background-color: var(--primary-brown);
+    color: white;
+}
+
+.btn-cancel {
+    background-color: var(--danger-red);
+    color: white;
+}
+
+.btn:hover {
+    filter: brightness(1.1);
+}
+
+.btn:active {
+    transform: scale(0.98);
+}
+
+.btn-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-group-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+/* Seção de Vendas */
+.venda-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.venda-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.carrinho-display {
+    border-left: 1px solid var(--border-light);
+    padding-left: 2rem;
+}
+
+#lista-carrinho {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 1rem;
+}
+
+#lista-carrinho li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--border-light);
+}
+
+#lista-carrinho li button {
+    background: none;
+    border: none;
+    color: var(--danger-red);
+    cursor: pointer;
+    font-size: 1.2rem;
+}
+
+.carrinho-total {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-top: 1rem;
+    text-align: right;
+}
+
+.pagamento {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.troco-display {
+    text-align: right;
+    font-weight: bold;
+    color: var(--success-green);
+}
+
+/* Seção de Estoque */
+.tabela-container {
+    margin-top: 1rem;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-light);
+}
+
+thead th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+
 .alerta {
     background-color: #fff8e1; /* Amarelo suave */
-    border-left: 5px solid #ffc107;
+}
+
+/* Seção de Relatórios */
+.relatorio-output {
+    margin-top: 1rem;
+    border-top: 1px solid var(--border-light);
+    padding-top: 1rem;
+}
+
+/* Histórico de Vendas */
+.fechamento-caixa {
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-align: center;
+    padding: 1rem;
+    background-color: #e9ecef;
+    border-radius: 5px;
+    margin-bottom: 1rem;
+}
+
+.historico-lista {
+    list-style: none;
+    padding: 0;
+}
+
+.historico-lista li {
+    background-color: #f9f9f9;
+    padding: 1rem;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    border: 1px solid var(--border-light);
+}
+
+.venda-resumo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.venda-resumo .btn-cancelar {
+    background-color: var(--danger-red);
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+}
+
+.venda-resumo .btn-toggle-detalhes {
+    background-color: var(--info-blue);
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+}
+
+.venda-detalhes {
+    margin-top: 10px;
+    border-top: 1px dashed var(--border-light);
+    padding-top: 10px;
+}
+
+.observacao-cancelamento {
+    font-style: italic;
+    color: #666;
+    margin-top: 5px;
+    border-left: 2px solid var(--border-light);
+    padding-left: 10px;
+}
+
+.observacao-cancelamento span {
+    font-weight: bold;
 }
 
 .cancelada {
@@ -26,11 +308,7 @@
     text-decoration: line-through;
 }
 
-.concluida {
-    /* Sem alteração, usa o estilo padrão */
-}
-
-/* Estilos para o Modal de Senha */
+/* Modal de Senha */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -61,38 +339,67 @@
     margin-top: 20px;
 }
 
-.venda-resumo {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 0;
-}
-
-.venda-resumo .btn-cancelar {
-    background-color: var(--danger-red);
+/* Mensagens Toast */
+.toast-message {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: var(--success-green);
     color: white;
-    border: none;
-    padding: 5px 10px;
+    padding: 15px 25px;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    animation: fadein 0.5s, fadeout 0.5s 2.5s;
 }
 
-.venda-resumo .btn-cancelar:hover {
-    background-color: #c82333;
+@keyframes fadein {
+    from {
+        bottom: 0;
+        opacity: 0;
+    }
+    to {
+        bottom: 20px;
+        opacity: 1;
+    }
 }
 
-.observacao-cancelamento {
-    font-style: italic;
-    color: #666;
-    margin-top: 5px;
-    border-left: 2px solid var(--border-light);
-    padding-left: 10px;
-}
-.observacao-cancelamento span {
-    font-weight: bold;
+@keyframes fadeout {
+    from {
+        bottom: 20px;
+        opacity: 1;
+    }
+    to {
+        bottom: 0;
+        opacity: 0;
+    }
 }
 
+/* Media Queries */
 @media (max-width: 768px) {
-    /* ... (código existente) ... */
-    .modal-content {
-        padding: 1.5rem;
+    main {
+        grid-template-columns: 1fr;
+    }
+
+    .venda-container {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .carrinho-display {
+        border-left: none;
+        border-top: 1px solid var(--border-light);
+        padding-left: 0;
+        padding-top: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .input-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .input-group button {
+        width: 100%;
     }
 }

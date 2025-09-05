@@ -16,19 +16,22 @@
     </header>
 
     <main>
-        <section id="vendas">
+        <section id="vendas" class="card">
             <h2>Vendas Balcão</h2>
             <div class="venda-container">
-                <div id="carrinho">
+                <div class="venda-actions">
+                    <div class="input-group">
+                        <input type="text" id="produto-id" placeholder="Cód. de Barras" autofocus>
+                        <input type="number" id="produto-quantidade" placeholder="Qtd" value="1" min="1">
+                        <button id="adicionar-produto" class="btn btn-add">Adicionar</button>
+                    </div>
+                </div>
+                <div id="carrinho" class="carrinho-display">
                     <h3>Carrinho de Compras</h3>
                     <ul id="lista-carrinho"></ul>
-                    <p>Total: R$ <span id="valor-total">0.00</span></p>
-                </div>
-                <div class="venda-inputs">
-                    <input type="text" id="produto-id" placeholder="Cód. de Barras" autofocus>
-                    <input type="number" id="produto-quantidade" placeholder="Qtd" value="1" min="1">
-                    <button id="adicionar-produto" class="btn-primary">Adicionar ao Carrinho</button>
-                    
+                    <div class="carrinho-total">
+                        <p>Total: R$ <span id="valor-total">0.00</span></p>
+                    </div>
                     <div class="pagamento">
                         <select id="forma-pagamento">
                             <option value="Credito">Crédito</option>
@@ -37,9 +40,9 @@
                             <option value="Dinheiro">Dinheiro</option>
                         </select>
                         <input type="number" id="valor-recebido" placeholder="Valor Recebido (Dinheiro)" style="display: none;">
-                        <button id="finalizar-venda" class="btn-primary">Finalizar Venda</button>
+                        <button id="finalizar-venda" class="btn btn-confirm">Finalizar Venda</button>
                     </div>
-                    <div id="troco-info" style="display: none;"></div>
+                    <div id="troco-info" class="troco-display" style="display: none;"></div>
                 </div>
             </div>
             
@@ -48,75 +51,70 @@
             <div class="lancamento-delivery-container">
                 <h3>Lançamento de Vendas Delivery (iFood/99food)</h3>
                 <p>Lançamento de saída de estoque sem registro de valor.</p>
-                <div class="venda-inputs">
+                <div class="input-group">
                     <select id="plataforma-delivery">
                         <option value="iFood">iFood</option>
                         <option value="99food">99food</option>
                     </select>
                     <input type="text" id="produto-id-delivery" placeholder="Cód. de Barras">
                     <input type="number" id="produto-quantidade-delivery" placeholder="Qtd" value="1" min="1">
-                    <button id="lancar-saida-delivery" class="btn-primary">Lançar Saída</button>
+                    <button id="lancar-saida-delivery" class="btn btn-confirm">Lançar Saída</button>
                 </div>
             </div>
         </section>
 
-        <hr>
-
-        <section id="estoque">
+        <section id="estoque" class="card">
             <h2>Gestão de Estoque</h2>
             <div class="estoque-container">
-                <form id="estoque-form">
+                <form id="estoque-form" class="form-grid">
                     <input type="text" id="form-id" placeholder="Cód. Produto" required>
                     <input type="text" id="form-nome" placeholder="Nome do Produto" required>
                     <input type="number" id="form-valor" placeholder="Valor (R$)" step="0.01" min="0" required>
                     <input type="number" id="form-quantidade" placeholder="Quantidade" min="0" required>
-                    <button type="submit" class="btn-primary">Adicionar/Atualizar Produto</button>
+                    <button type="submit" class="btn btn-primary btn-full">Adicionar/Atualizar Produto</button>
                 </form>
                 <div class="estoque-visualizacao">
-                    <button id="visualizar-estoque" class="btn-secondary">Visualizar Estoque</button>
-                    <button id="alerta-estoque" class="btn-secondary">Ver Alertas</button>
-                    <div id="tabela-estoque"></div>
-                    <div id="alerta-info" style="display: none;"></div>
+                    <div class="btn-group">
+                        <button id="visualizar-estoque" class="btn btn-secondary">Visualizar Estoque</button>
+                        <button id="alerta-estoque" class="btn btn-secondary">Ver Alertas</button>
+                    </div>
+                    <div id="tabela-estoque" class="tabela-container"></div>
+                    <div id="alerta-info" class="alerta-info" style="display: none;"></div>
                 </div>
             </div>
         </section>
 
-        <hr>
-
-        <section id="relatorios">
+        <section id="relatorios" class="card">
             <h2>Relatórios</h2>
-            <div class="relatorios-container">
-                <button id="relatorio-diario" class="btn-secondary">Vendas Diárias</button>
-                <button id="relatorio-mensal" class="btn-secondary">Vendas Mensais</button>
-                <button id="relatorio-geral" class="btn-secondary">Vendas Gerais</button>
-                <button id="relatorio-delivery" class="btn-secondary">Vendas Delivery</button>
-                <div id="relatorio-output"></div>
+            <div class="relatorios-container btn-group-grid">
+                <button id="relatorio-diario" class="btn btn-secondary">Vendas Diárias</button>
+                <button id="relatorio-mensal" class="btn btn-secondary">Vendas Mensais</button>
+                <button id="relatorio-geral" class="btn btn-secondary">Vendas Gerais</button>
+                <button id="relatorio-delivery" class="btn btn-secondary">Vendas Delivery</button>
             </div>
+            <div id="relatorio-output" class="relatorio-output"></div>
         </section>
 
-        <hr>
-
-        <section id="historico-vendas">
+        <section id="historico-vendas" class="card">
             <h2>Histórico de Vendas Diárias</h2>
-            <div class="historico-container">
-                <div class="fechamento-caixa">
-                    <p>Fechamento de Caixa: R$ <span id="valor-fechamento-caixa">0.00</span></p>
-                </div>
-                <ul id="historico-vendas-diarias">
-                    </ul>
+            <div class="fechamento-caixa">
+                <p>Fechamento de Caixa: R$ <span id="valor-fechamento-caixa">0.00</span></p>
             </div>
+            <ul id="historico-vendas-diarias" class="historico-lista"></ul>
         </section>
     </main>
-
+    
     <div id="modal-senha" class="modal-overlay">
         <div class="modal-content">
             <h3>Digite a Senha Mestre</h3>
             <input type="password" id="senha-input" placeholder="Senha Mestre">
             <div class="modal-buttons">
-                <button id="confirmar-cancelamento-btn" class="btn-primary">Confirmar</button>
-                <button id="fechar-modal-btn" class="btn-secondary">Cancelar</button>
+                <button id="confirmar-cancelamento-btn" class="btn btn-primary">Confirmar</button>
+                <button id="fechar-modal-btn" class="btn btn-secondary">Cancelar</button>
             </div>
         </div>
     </div>
+    
+    <div id="toast-message" class="toast-message" style="display: none;"></div>
 </body>
 </html>

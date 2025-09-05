@@ -1,131 +1,176 @@
 // script.js (versão melhorada e unificada)
-// Onde sua API está rodando
 const API_URL = 'http://127.0.0.1:5000/api';
 
-// Cache dos elementos do DOM para melhor performance
-const produtoIdInput = document.getElementById('produto-id');
-const produtoQuantidadeInput = document.getElementById('produto-quantidade');
-const adicionarProdutoBtn = document.getElementById('adicionar-produto');
-const listaCarrinho = document.getElementById('lista-carrinho');
-const valorTotalSpan = document.getElementById('valor-total');
-const formaPagamentoSelect = document.getElementById('forma-pagamento');
-const valorRecebidoInput = document.getElementById('valor-recebido');
-const finalizarVendaBtn = document.getElementById('finalizar-venda');
-const trocoInfo = document.getElementById('troco-info');
-const tabelaEstoqueDiv = document.getElementById('tabela-estoque');
-const alertaInfoDiv = document.getElementById('alerta-info');
-const relatorioOutputDiv = document.getElementById('relatorio-output');
+// Cache dos elementos do DOM
+const DOM = {
+    // Vendas
+    produtoIdInput: document.getElementById('produto-id'),
+    produtoQuantidadeInput: document.getElementById('produto-quantidade'),
+    adicionarProdutoBtn: document.getElementById('adicionar-produto'),
+    listaCarrinho: document.getElementById('lista-carrinho'),
+    valorTotalSpan: document.getElementById('valor-total'),
+    formaPagamentoSelect: document.getElementById('forma-pagamento'),
+    valorRecebidoInput: document.getElementById('valor-recebido'),
+    finalizarVendaBtn: document.getElementById('finalizar-venda'),
+    trocoInfo: document.getElementById('troco-info'),
 
-// Elementos para o histórico de vendas
-const historicoVendasDiariasUl = document.getElementById('historico-vendas-diarias');
-const valorFechamentoCaixaSpan = document.getElementById('valor-fechamento-caixa');
+    // Estoque
+    tabelaEstoqueDiv: document.getElementById('tabela-estoque'),
+    alertaInfoDiv: document.getElementById('alerta-info'),
+    estoqueForm: document.getElementById('estoque-form'),
+    formIdInput: document.getElementById('form-id'),
+    formNomeInput: document.getElementById('form-nome'),
+    formValorInput: document.getElementById('form-valor'),
+    formQuantidadeInput: document.getElementById('form-quantidade'),
 
-// Elementos do formulário de estoque
-const estoqueForm = document.getElementById('estoque-form');
-const formIdInput = document.getElementById('form-id');
-const formNomeInput = document.getElementById('form-nome');
-const formValorInput = document.getElementById('form-valor');
-const formQuantidadeInput = document.getElementById('form-quantidade');
+    // Vendas Delivery
+    plataformaDeliverySelect: document.getElementById('plataforma-delivery'),
+    produtoIdDeliveryInput: document.getElementById('produto-id-delivery'),
+    produtoQuantidadeDeliveryInput: document.getElementById('produto-quantidade-delivery'),
+    lancarSaidaDeliveryBtn: document.getElementById('lancar-saida-delivery'),
 
-// Novos elementos para Vendas Delivery
-const plataformaDeliverySelect = document.getElementById('plataforma-delivery');
-const produtoIdDeliveryInput = document.getElementById('produto-id-delivery');
-const produtoQuantidadeDeliveryInput = document.getElementById('produto-quantidade-delivery');
-const lancarSaidaDeliveryBtn = document.getElementById('lancar-saida-delivery');
+    // Relatórios
+    relatorioOutputDiv: document.getElementById('relatorio-output'),
+    relatorioDiarioBtn: document.getElementById('relatorio-diario'),
+    relatorioMensalBtn: document.getElementById('relatorio-mensal'),
+    relatorioGeralBtn: document.getElementById('relatorio-geral'),
+    relatorioDeliveryBtn: document.getElementById('relatorio-delivery'),
 
-// Novos elementos do Modal de Senha
-const modalSenha = document.getElementById('modal-senha');
-const senhaInput = document.getElementById('senha-input');
-const confirmarCancelamentoBtn = document.getElementById('confirmar-cancelamento-btn');
-const fecharModalBtn = document.getElementById('fechar-modal-btn');
+    // Histórico de Vendas
+    historicoVendasDiariasUl: document.getElementById('historico-vendas-diarias'),
+    valorFechamentoCaixaSpan: document.getElementById('valor-fechamento-caixa'),
+
+    // Modal de Senha
+    modalSenha: document.getElementById('modal-senha'),
+    senhaInput: document.getElementById('senha-input'),
+    confirmarCancelamentoBtn: document.getElementById('confirmar-cancelamento-btn'),
+    fecharModalBtn: document.getElementById('fechar-modal-btn'),
+    
+    // Toast
+    toastMessage: document.getElementById('toast-message'),
+};
 
 let carrinho = [];
 let vendaParaCancelarId = null;
 
+// Funções Utilitárias
+function showToast(message, isSuccess = true) {
+    DOM.toastMessage.textContent = message;
+    DOM.toastMessage.style.backgroundColor = isSuccess ? 'var(--success-green)' : 'var(--danger-red)';
+    DOM.toastMessage.style.display = 'block';
+    setTimeout(() => {
+        DOM.toastMessage.style.display = 'none';
+    }, 3000);
+}
+
+async function fetchData(url, options = {}) {
+    try {
+        const response = await fetch(`${API_URL}${url}`, options);
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.erro || 'Erro na requisição.');
+        }
+        return result;
+    } catch (error) {
+        showToast(`Erro: ${error.message}`, false);
+        console.error('Erro:', error);
+        throw error;
+    }
+}
+
 // Funções de Vendas
-// ---
 async function adicionarAoCarrinho() {
-    const produtoId = produtoIdInput.value.trim();
-    const quantidade = parseInt(produtoQuantidadeInput.value);
+    const produtoId = DOM.produtoIdInput.value.trim();
+    const quantidade = parseInt(DOM.produtoQuantidadeInput.value);
 
     if (!produtoId || quantidade < 1) {
-        alert('Por favor, insira um código de produto e uma quantidade válida.');
+        showToast('Por favor, insira um código de produto e uma quantidade válida.', false);
         return;
     }
 
     try {
-        const response = await fetch(`${API_URL}/estoque`);
-        const result = await response.json();
-        const produto = result.estoque.find(p => p.id === produtoId);
+        const estoque = await fetchData('/estoque');
+        const produto = estoque.estoque.find(p => p.id === produtoId);
 
         if (!produto) {
-            alert('Produto não encontrado no estoque.');
+            showToast('Produto não encontrado no estoque.', false);
             return;
         }
 
-        carrinho.push({
-            id: produto.id,
-            nome: produto.nome,
-            valor: produto.valor,
-            quantidade: quantidade
-        });
+        const itemExistente = carrinho.find(item => item.id === produto.id);
+        if (itemExistente) {
+            itemExistente.quantidade += quantidade;
+        } else {
+            carrinho.push({ ...produto, quantidade });
+        }
         
         atualizarCarrinhoUI();
-        produtoIdInput.value = '';
-        produtoQuantidadeInput.value = 1;
-        produtoIdInput.focus();
-
+        DOM.produtoIdInput.value = '';
+        DOM.produtoQuantidadeInput.value = 1;
+        DOM.produtoIdInput.focus();
+        showToast('Produto adicionado ao carrinho.');
     } catch (error) {
-        alert('Erro ao buscar produto. Tente novamente.');
-        console.error('Erro:', error);
+        // O erro já é tratado na função fetchData
     }
 }
 
+function removerItemCarrinho(id) {
+    carrinho = carrinho.filter(item => item.id !== id);
+    atualizarCarrinhoUI();
+    showToast('Item removido do carrinho.');
+}
+
 function atualizarCarrinhoUI() {
-    listaCarrinho.innerHTML = '';
+    DOM.listaCarrinho.innerHTML = '';
     let total = 0;
     carrinho.forEach(item => {
         const li = document.createElement('li');
         const valorItem = item.quantidade * item.valor;
-        li.textContent = `${item.quantidade}x ${item.nome} - R$ ${valorItem.toFixed(2)}`;
-        listaCarrinho.appendChild(li);
+        li.innerHTML = `
+            <span>${item.quantidade}x ${item.nome}</span>
+            <span>R$ ${valorItem.toFixed(2)}</span>
+            <button class="btn-remove-item" data-id="${item.id}">X</button>
+        `;
+        li.querySelector('.btn-remove-item').addEventListener('click', () => removerItemCarrinho(item.id));
+        DOM.listaCarrinho.appendChild(li);
         total += valorItem;
     });
-    valorTotalSpan.textContent = total.toFixed(2);
+    DOM.valorTotalSpan.textContent = total.toFixed(2);
     calcularTroco();
 }
 
 function calcularTroco() {
-    const totalVenda = parseFloat(valorTotalSpan.textContent);
-    const formaPagamento = formaPagamentoSelect.value;
-    const valorRecebido = parseFloat(valorRecebidoInput.value) || 0;
+    const totalVenda = parseFloat(DOM.valorTotalSpan.textContent);
+    const formaPagamento = DOM.formaPagamentoSelect.value;
+    const valorRecebido = parseFloat(DOM.valorRecebidoInput.value) || 0;
 
     if (formaPagamento === 'Dinheiro') {
-        if (valorRecebido >= totalVenda) {
-            const troco = valorRecebido - totalVenda;
-            trocoInfo.textContent = `Troco: R$ ${troco.toFixed(2)}`;
-            trocoInfo.style.display = 'block';
+        const troco = valorRecebido - totalVenda;
+        if (troco >= 0) {
+            DOM.trocoInfo.textContent = `Troco: R$ ${troco.toFixed(2)}`;
+            DOM.trocoInfo.style.color = 'var(--success-green)';
         } else {
-            trocoInfo.textContent = `Faltam R$ ${(totalVenda - valorRecebido).toFixed(2)}`;
-            trocoInfo.style.display = 'block';
+            DOM.trocoInfo.textContent = `Faltam R$ ${(-troco).toFixed(2)}`;
+            DOM.trocoInfo.style.color = 'var(--danger-red)';
         }
+        DOM.trocoInfo.style.display = 'block';
     } else {
-        trocoInfo.style.display = 'none';
+        DOM.trocoInfo.style.display = 'none';
     }
 }
 
 async function finalizarVenda() {
     if (carrinho.length === 0) {
-        alert('O carrinho está vazio.');
+        showToast('O carrinho está vazio.', false);
         return;
     }
 
-    const formaPagamento = formaPagamentoSelect.value;
-    const valorRecebido = parseFloat(valorRecebidoInput.value) || 0;
-    const totalVenda = parseFloat(valorTotalSpan.textContent);
+    const formaPagamento = DOM.formaPagamentoSelect.value;
+    const valorRecebido = parseFloat(DOM.valorRecebidoInput.value) || 0;
+    const totalVenda = parseFloat(DOM.valorTotalSpan.textContent);
 
     if (formaPagamento === 'Dinheiro' && valorRecebido < totalVenda) {
-        alert('O valor recebido é menor que o valor total da venda. A venda não pode ser finalizada.');
+        showToast('O valor recebido é menor que o valor total da venda.', false);
         return;
     }
 
@@ -136,40 +181,27 @@ async function finalizarVenda() {
     };
 
     try {
-        const response = await fetch(`${API_URL}/vendas/balcao`, {
+        await fetchData('/vendas/balcao', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(vendaData)
         });
-
-        const result = await response.json();
-
-        if (response.ok) {
-            alert('Venda finalizada com sucesso!');
-            carrinho = [];
-            atualizarCarrinhoUI();
-            trocoInfo.style.display = 'none';
-            carregarHistoricoVendasDiarias(); // Atualiza o histórico
-            visualizarEstoque(); // Atualiza a tabela de estoque
-        } else {
-            alert(`Erro na venda: ${result.erro}`);
-        }
+        
+        showToast('Venda finalizada com sucesso!');
+        carrinho = [];
+        atualizarCarrinhoUI();
+        DOM.trocoInfo.style.display = 'none';
+        carregarHistoricoVendasDiarias();
+        visualizarEstoque();
     } catch (error) {
-        alert('Erro de comunicação com a API.');
-        console.error('Erro:', error);
+        // O erro já é tratado na função fetchData
     }
 }
 
 // Funções de Estoque
-// ---
-
 async function visualizarEstoque() {
     try {
-        const response = await fetch(`${API_URL}/estoque`);
-        if (!response.ok) {
-            throw new Error('Erro ao carregar estoque.');
-        }
-        const result = await response.json();
+        const result = await fetchData('/estoque');
         const estoque = result.estoque;
 
         let tabelaHTML = `
@@ -192,7 +224,7 @@ async function visualizarEstoque() {
                     <td>${produto.nome}</td>
                     <td>${produto.valor.toFixed(2)}</td>
                     <td>${produto.quantidade}</td>
-                    <td><button onclick="preencherFormulario('${produto.id}', '${produto.nome}', ${produto.valor}, ${produto.quantidade})">Editar</button></td>
+                    <td><button class="btn btn-secondary btn-small" onclick="preencherFormulario('${produto.id}', '${produto.nome}', ${produto.valor}, ${produto.quantidade})">Editar</button></td>
                 </tr>
             `;
         });
@@ -200,90 +232,104 @@ async function visualizarEstoque() {
                 </tbody>
             </table>
         `;
-
-        tabelaEstoqueDiv.innerHTML = tabelaHTML;
+        DOM.tabelaEstoqueDiv.innerHTML = tabelaHTML;
     } catch (error) {
-        tabelaEstoqueDiv.innerHTML = `<p class="erro">${error.message}</p>`;
-        console.error('Erro:', error);
+        DOM.tabelaEstoqueDiv.innerHTML = `<p class="erro">Não foi possível carregar o estoque.</p>`;
     }
 }
 
 function preencherFormulario(id, nome, valor, quantidade) {
-    formIdInput.value = id;
-    formNomeInput.value = nome;
-    formValorInput.value = valor;
-    formQuantidadeInput.value = quantidade;
+    DOM.formIdInput.value = id;
+    DOM.formNomeInput.value = nome;
+    DOM.formValorInput.value = valor;
+    DOM.formQuantidadeInput.value = quantidade;
 }
 
 async function manipularEstoque(event) {
     event.preventDefault();
 
     const produtoData = {
-        id: formIdInput.value.trim(),
-        nome: formNomeInput.value.trim(),
-        valor: parseFloat(formValorInput.value),
-        quantidade: parseInt(formQuantidadeInput.value)
+        id: DOM.formIdInput.value.trim(),
+        nome: DOM.formNomeInput.value.trim(),
+        valor: parseFloat(DOM.formValorInput.value),
+        quantidade: parseInt(DOM.formQuantidadeInput.value)
     };
     
-    // Validação básica
     if (!produtoData.id || !produtoData.nome || isNaN(produtoData.valor) || isNaN(produtoData.quantidade)) {
-        alert('Por favor, preencha todos os campos corretamente.');
+        showToast('Por favor, preencha todos os campos corretamente.', false);
         return;
     }
 
     try {
-        const response = await fetch(`${API_URL}/estoque/produto`, {
+        const result = await fetchData('/estoque/produto', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(produtoData)
         });
 
-        const result = await response.json();
-
-        if (response.ok) {
-            alert(`Produto ${result.mensagem}`);
-            estoqueForm.reset();
-            visualizarEstoque();
-            verAlertasEstoque();
-        } else {
-            alert(`Erro: ${result.erro}`);
-        }
+        showToast(`Produto ${result.mensagem.toLowerCase()}!`);
+        DOM.estoqueForm.reset();
+        visualizarEstoque();
+        verAlertasEstoque();
     } catch (error) {
-        alert('Erro de comunicação com a API.');
-        console.error('Erro:', error);
+        // O erro já é tratado na função fetchData
     }
 }
 
 async function verAlertasEstoque() {
     try {
-        const response = await fetch(`${API_URL}/estoque/alerta`);
-        const result = await response.json();
+        const result = await fetchData('/estoque/alerta');
 
-        if (response.ok && result.produtos.length > 0) {
+        if (result.produtos && result.produtos.length > 0) {
             const listaAlerta = result.produtos.map(p => `${p.nome} (Qtd: ${p.quantidade})`).join('<br>');
-            alertaInfoDiv.innerHTML = `<h3>Produtos com Estoque Baixo:</h3><p>${listaAlerta}</p>`;
-            alertaInfoDiv.style.display = 'block';
+            DOM.alertaInfoDiv.innerHTML = `<h3>Produtos com Estoque Baixo:</h3><p>${listaAlerta}</p>`;
+            DOM.alertaInfoDiv.style.display = 'block';
         } else {
-            alertaInfoDiv.innerHTML = `<p>${result.mensagem}</p>`;
-            alertaInfoDiv.style.display = 'none'; // Esconde se não houver alerta
+            DOM.alertaInfoDiv.innerHTML = `<p>${result.mensagem}</p>`;
+            DOM.alertaInfoDiv.style.display = 'none';
         }
     } catch (error) {
-        alertaInfoDiv.innerHTML = `<p class="erro">Erro ao buscar alertas.</p>`;
-        console.error('Erro:', error);
+        DOM.alertaInfoDiv.innerHTML = `<p class="erro">Erro ao buscar alertas.</p>`;
+    }
+}
+
+// Funções de Vendas Delivery
+async function lancarSaidaDelivery() {
+    const plataforma = DOM.plataformaDeliverySelect.value;
+    const produtoId = DOM.produtoIdDeliveryInput.value.trim();
+    const quantidade = parseInt(DOM.produtoQuantidadeDeliveryInput.value);
+
+    if (!produtoId || quantidade < 1) {
+        showToast('Por favor, insira um código de produto e uma quantidade válida.', false);
+        return;
+    }
+
+    const vendaData = {
+        plataforma: plataforma,
+        produto_id: produtoId,
+        quantidade: quantidade
+    };
+
+    try {
+        await fetchData('/vendas/delivery', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(vendaData)
+        });
+        showToast('Saída de delivery lançada com sucesso!');
+        DOM.produtoIdDeliveryInput.value = '';
+        DOM.produtoQuantidadeDeliveryInput.value = 1;
+        visualizarEstoque();
+    } catch (error) {
+        // O erro já é tratado na função fetchData
     }
 }
 
 // Funções de Relatórios
-// ---
-
 async function carregarHistoricoVendasDiarias() {
     try {
-        const response = await fetch(`${API_URL}/relatorios/diario`);
-        if (!response.ok) {
-            throw new Error(`Erro de rede: ${response.status} ${response.statusText}`);
-        }
-        const result = await response.json();
-        historicoVendasDiariasUl.innerHTML = '';
+        const result = await fetchData('/relatorios/diario');
+        DOM.historicoVendasDiariasUl.innerHTML = '';
         let totalDiario = 0;
 
         if (result.vendas && result.vendas.length > 0) {
@@ -305,13 +351,15 @@ async function carregarHistoricoVendasDiarias() {
                 if (venda.status === 'cancelada' && venda.observacao_cancelamento) {
                     observacaoCancelamentoHTML = `<p class="observacao-cancelamento"><span>Motivo:</span> ${venda.observacao_cancelamento}</p>`;
                 }
+                
+                const toggleBtn = `<button class="btn btn-toggle-detalhes">Detalhes</button>`;
+                const cancelarBtn = `<button class="btn btn-cancelar" onclick="abrirModalSenha(${venda.id})">Cancelar</button>`;
 
                 li.innerHTML = `
                     <div class="venda-resumo">
                         <span class="venda-hora">${hora}</span>
                         <span class="venda-valor">R$ ${valorTotal}</span>
-                        <button class="btn-toggle-detalhes">Detalhes</button>
-                        <button class="btn-cancelar" onclick="abrirModalSenha(${venda.id})">Cancelar</button>
+                        ${venda.status !== 'cancelada' ? toggleBtn + cancelarBtn : toggleBtn}
                     </div>
                     <div class="venda-detalhes" style="display:none;">
                         ${itensVendaHTML}
@@ -319,173 +367,146 @@ async function carregarHistoricoVendasDiarias() {
                     </div>
                 `;
 
-                li.querySelector('.btn-toggle-detalhes').addEventListener('click', () => {
+                li.querySelector('.btn-toggle-detalhes')?.addEventListener('click', () => {
                     const detalhes = li.querySelector('.venda-detalhes');
                     detalhes.style.display = detalhes.style.display === 'block' ? 'none' : 'block';
                 });
 
-                historicoVendasDiariasUl.appendChild(li);
+                DOM.historicoVendasDiariasUl.appendChild(li);
 
                 if (venda.status !== 'cancelada') {
                     totalDiario += venda.valor_total;
                 }
             });
         } else {
-            const li = document.createElement('li');
-            li.textContent = "Nenhuma venda registrada hoje.";
-            historicoVendasDiariasUl.appendChild(li);
+            DOM.historicoVendasDiariasUl.innerHTML = `<li class="message-info">Nenhuma venda registrada hoje.</li>`;
         }
 
-        valorFechamentoCaixaSpan.textContent = totalDiario.toFixed(2);
+        DOM.valorFechamentoCaixaSpan.textContent = totalDiario.toFixed(2);
     } catch (error) {
-        console.error('Erro ao buscar histórico de vendas diárias:', error);
-        historicoVendasDiariasUl.innerHTML = `<li class="erro">Erro ao carregar o histórico.</li>`;
-        valorFechamentoCaixaSpan.textContent = '0.00';
+        DOM.historicoVendasDiariasUl.innerHTML = `<li class="erro">Erro ao carregar o histórico.</li>`;
+        DOM.valorFechamentoCaixaSpan.textContent = '0.00';
     }
 }
 
-async function gerarRelatorioMensal() {
+async function gerarRelatorio(endpoint, titulo) {
     try {
-        const response = await fetch(`${API_URL}/relatorios/mensal`);
-        const result = await response.json();
-        exibirRelatorio(result, 'Relatório de Vendas Mensais');
-    } catch (error) {
-        console.error('Erro ao gerar relatório mensal:', error);
-        relatorioOutputDiv.innerHTML = `<p class="erro">Erro ao gerar o relatório mensal.</p>`;
-    }
-}
+        const result = await fetchData(`/relatorios/${endpoint}`);
+        if (!result.vendas || result.vendas.length === 0) {
+            DOM.relatorioOutputDiv.innerHTML = `<p class="message-info">${result.mensagem}</p>`;
+            return;
+        }
 
-async function gerarRelatorioGeral() {
-    try {
-        const response = await fetch(`${API_URL}/relatorios/geral`);
-        const result = await response.json();
-        exibirRelatorio(result, 'Relatório de Vendas Geral');
-    } catch (error) {
-        console.error('Erro ao gerar relatório geral:', error);
-        relatorioOutputDiv.innerHTML = `<p class="erro">Erro ao gerar o relatório geral.</p>`;
-    }
-}
-
-async function gerarRelatorioDelivery() {
-    try {
-        const response = await fetch(`${API_URL}/relatorios/delivery`);
-        const result = await response.json();
-        exibirRelatorio(result, 'Relatório de Vendas Delivery');
-    } catch (error) {
-        console.error('Erro ao gerar relatório delivery:', error);
-        relatorioOutputDiv.innerHTML = `<p class="erro">Erro ao gerar o relatório delivery.</p>`;
-    }
-}
-
-function exibirRelatorio(relatorio, titulo) {
-    if (!relatorio || !relatorio.vendas || relatorio.vendas.length === 0) {
-        relatorioOutputDiv.innerHTML = `<p>${relatorio.mensagem}</p>`;
-        return;
-    }
-
-    let html = `
-        <h3>${titulo}</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Data</th>
-                    <th>Valor Total</th>
-                    <th>Forma de Pagamento</th>
-                    <th>Tipo</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
-    relatorio.vendas.forEach(venda => {
-        const dataHora = new Date(venda.data_hora);
-        const dataFormatada = dataHora.toLocaleDateString('pt-BR');
-        const horaFormatada = dataHora.toLocaleTimeString('pt-BR');
-        html += `
-            <tr class="${venda.status}">
-                <td>${dataFormatada} ${horaFormatada}</td>
-                <td>R$ ${venda.valor_total.toFixed(2)}</td>
-                <td>${venda.forma_pagamento}</td>
-                <td>${venda.tipo_venda}</td>
-                <td>${venda.status}</td>
-            </tr>
+        let html = `
+            <h3>${titulo}</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Valor Total</th>
+                        <th>Forma de Pagamento</th>
+                        <th>Tipo</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
         `;
-    });
-    html += `
-            </tbody>
-        </table>
-    `;
-
-    relatorioOutputDiv.innerHTML = html;
+        result.vendas.forEach(venda => {
+            const dataHora = new Date(venda.data_hora);
+            const dataFormatada = dataHora.toLocaleDateString('pt-BR');
+            const horaFormatada = dataHora.toLocaleTimeString('pt-BR');
+            html += `
+                <tr class="${venda.status}">
+                    <td>${dataFormatada} ${horaFormatada}</td>
+                    <td>R$ ${venda.valor_total.toFixed(2)}</td>
+                    <td>${venda.forma_pagamento}</td>
+                    <td>${venda.tipo_venda}</td>
+                    <td>${venda.status}</td>
+                </tr>
+            `;
+        });
+        html += `
+                </tbody>
+            </table>
+        `;
+        DOM.relatorioOutputDiv.innerHTML = html;
+    } catch (error) {
+        DOM.relatorioOutputDiv.innerHTML = `<p class="erro">Erro ao gerar o relatório.</p>`;
+    }
 }
-
 
 // Funções do Modal de Senha
-// ---
 function abrirModalSenha(vendaId) {
     vendaParaCancelarId = vendaId;
-    modalSenha.style.display = 'flex';
-    senhaInput.focus();
+    DOM.modalSenha.style.display = 'flex';
+    DOM.senhaInput.focus();
 }
 
 function fecharModalSenha() {
-    modalSenha.style.display = 'none';
-    senhaInput.value = '';
+    DOM.modalSenha.style.display = 'none';
+    DOM.senhaInput.value = '';
     vendaParaCancelarId = null;
 }
 
 async function confirmarCancelamento() {
-    const senha = senhaInput.value;
+    const senha = DOM.senhaInput.value;
     if (!senha) {
-        alert('Por favor, digite a senha mestre.');
+        showToast('Por favor, digite a senha mestre.', false);
         return;
     }
 
     try {
-        const response = await fetch(`${API_URL}/vendas/cancelar/${vendaParaCancelarId}`, {
+        await fetchData(`/vendas/cancelar/${vendaParaCancelarId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ senha_mestre: senha })
         });
-
-        const result = await response.json();
-
-        if (response.ok) {
-            alert(result.mensagem);
-            fecharModalSenha();
-            carregarHistoricoVendasDiarias(); // Atualiza a lista
-            visualizarEstoque(); // Atualiza o estoque
-        } else {
-            alert(`Erro: ${result.erro}`);
-            senhaInput.value = ''; // Limpa a senha
-        }
-
+        
+        showToast('Venda cancelada com sucesso!');
+        fecharModalSenha();
+        carregarHistoricoVendasDiarias();
+        visualizarEstoque();
     } catch (error) {
-        alert('Erro de comunicação com a API.');
-        console.error('Erro:', error);
+        // O erro já é tratado na função fetchData
+        DOM.senhaInput.value = '';
     }
 }
 
 // Event Listeners
-adicionarProdutoBtn.addEventListener('click', adicionarAoCarrinho);
-finalizarVendaBtn.addEventListener('click', finalizarVenda);
-lancarSaidaDeliveryBtn.addEventListener('click', lancarSaidaDelivery);
-estoqueForm.addEventListener('submit', manipularEstoque);
+DOM.adicionarProdutoBtn.addEventListener('click', adicionarAoCarrinho);
+DOM.finalizarVendaBtn.addEventListener('click', finalizarVenda);
+DOM.lancarSaidaDeliveryBtn.addEventListener('click', lancarSaidaDelivery);
+DOM.estoqueForm.addEventListener('submit', manipularEstoque);
 document.getElementById('visualizar-estoque').addEventListener('click', visualizarEstoque);
 document.getElementById('alerta-estoque').addEventListener('click', verAlertasEstoque);
-document.getElementById('relatorio-diario').addEventListener('click', carregarHistoricoVendasDiarias);
-document.getElementById('relatorio-mensal').addEventListener('click', gerarRelatorioMensal);
-document.getElementById('relatorio-geral').addEventListener('click', gerarRelatorioGeral);
-document.getElementById('relatorio-delivery').addEventListener('click', gerarRelatorioDelivery);
-formaPagamentoSelect.addEventListener('change', () => {
-    valorRecebidoInput.style.display = formaPagamentoSelect.value === 'Dinheiro' ? 'block' : 'none';
+DOM.relatorioDiarioBtn.addEventListener('click', () => carregarHistoricoVendasDiarias());
+DOM.relatorioMensalBtn.addEventListener('click', () => gerarRelatorio('mensal', 'Relatório de Vendas Mensais'));
+DOM.relatorioGeralBtn.addEventListener('click', () => gerarRelatorio('geral', 'Relatório de Vendas Geral'));
+DOM.relatorioDeliveryBtn.addEventListener('click', () => gerarRelatorio('delivery', 'Relatório de Vendas Delivery'));
+DOM.formaPagamentoSelect.addEventListener('change', () => {
+    DOM.valorRecebidoInput.style.display = DOM.formaPagamentoSelect.value === 'Dinheiro' ? 'block' : 'none';
     calcularTroco();
 });
-valorRecebidoInput.addEventListener('input', calcularTroco);
-fecharModalBtn.addEventListener('click', fecharModalSenha);
-confirmarCancelamentoBtn.addEventListener('click', confirmarCancelamento);
+DOM.valorRecebidoInput.addEventListener('input', calcularTroco);
+DOM.fecharModalBtn.addEventListener('click', fecharModalSenha);
+DOM.confirmarCancelamentoBtn.addEventListener('click', confirmarCancelamento);
 
-// Carrega o histórico de vendas ao carregar a página
+// Ativação de atalhos de teclado
+DOM.produtoIdInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        DOM.produtoQuantidadeInput.focus();
+    }
+});
+
+DOM.produtoQuantidadeInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        DOM.adicionarProdutoBtn.click();
+    }
+});
+
+// Carrega dados iniciais ao carregar a página
 document.addEventListener('DOMContentLoaded', () => {
     carregarHistoricoVendasDiarias();
     visualizarEstoque();
