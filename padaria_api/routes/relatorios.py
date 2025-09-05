@@ -21,6 +21,14 @@ def relatorio_diario():
 
     lista_vendas = []
     for venda in vendas_hoje:
+        # Usa o método to_dict do modelo Venda para obter todos os detalhes
+        venda_dict = venda.to_dict()
+        
+        # Formata a data_hora no fuso horário de São Paulo para exibir corretamente
+        data_hora_sp = venda.data_hora.astimezone(fuso_horario_sp)
+        venda_dict['data_hora'] = data_hora_sp.isoformat() # Garante que o JS possa parsear
+
+        # Ajusta os itens vendidos para incluir o nome do produto
         itens_vendidos = []
         for item_venda in venda.itens_vendidos:
             produto = ProdutoEstoque.query.get(item_venda.produto_id)
@@ -28,19 +36,12 @@ def relatorio_diario():
                 'nome': produto.nome if produto else 'Produto Desconhecido',
                 'quantidade': item_venda.quantidade
             })
-        
-        # Converte a data_hora para o fuso horário de São Paulo e formata como string
-        data_hora_sp = venda.data_hora.astimezone(fuso_horario_sp)
-        
-        lista_vendas.append({
-            'id': venda.id,
-            'valor_total': venda.valor_total,
-            'data_hora': data_hora_sp.isoformat(),  # Usa ISO format para padronização
-            'forma_pagamento': venda.forma_pagamento,
-            'itens_vendidos': itens_vendidos
-        })
+        venda_dict['itens_vendidos'] = itens_vendidos
+
+        lista_vendas.append(venda_dict)
     
     return jsonify({'vendas': lista_vendas})
+
 
 @relatorios_bp.route('/relatorios/mensal', methods=['GET'])
 def relatorio_mensal():
@@ -55,7 +56,25 @@ def relatorio_mensal():
     if not vendas_mes:
         return jsonify({'mensagem': 'Nenhuma venda registrada este mês.', 'vendas': []})
     
-    return jsonify({'vendas': [v.to_dict() for v in vendas_mes]})
+    # Adiciona a lógica para incluir status e observação também no relatório mensal
+    lista_vendas = []
+    for venda in vendas_mes:
+        venda_dict = venda.to_dict()
+        data_hora_sp = venda.data_hora.astimezone(fuso_horario_sp)
+        venda_dict['data_hora'] = data_hora_sp.isoformat()
+        
+        itens_vendidos = []
+        for item_venda in venda.itens_vendidos:
+            produto = ProdutoEstoque.query.get(item_venda.produto_id)
+            itens_vendidos.append({
+                'nome': produto.nome if produto else 'Produto Desconhecido',
+                'quantidade': item_venda.quantidade
+            })
+        venda_dict['itens_vendidos'] = itens_vendidos
+        lista_vendas.append(venda_dict)
+
+    return jsonify({'vendas': lista_vendas})
+
 
 @relatorios_bp.route('/relatorios/geral', methods=['GET'])
 def relatorio_geral():
@@ -64,7 +83,24 @@ def relatorio_geral():
     if not todas_vendas:
         return jsonify({'mensagem': 'Nenhuma venda registrada.'})
         
-    return jsonify({'vendas': [v.to_dict() for v in todas_vendas]})
+    # Adiciona a lógica para incluir status e observação também no relatório geral
+    lista_vendas = []
+    for venda in todas_vendas:
+        venda_dict = venda.to_dict()
+        data_hora_sp = venda.data_hora.astimezone(fuso_horario_sp)
+        venda_dict['data_hora'] = data_hora_sp.isoformat()
+        
+        itens_vendidos = []
+        for item_venda in venda.itens_vendidos:
+            produto = ProdutoEstoque.query.get(item_venda.produto_id)
+            itens_vendidos.append({
+                'nome': produto.nome if produto else 'Produto Desconhecido',
+                'quantidade': item_venda.quantidade
+            })
+        venda_dict['itens_vendidos'] = itens_vendidos
+        lista_vendas.append(venda_dict)
+
+    return jsonify({'vendas': lista_vendas})
 
 @relatorios_bp.route('/relatorios/delivery', methods=['GET'])
 def relatorio_delivery():
@@ -76,6 +112,14 @@ def relatorio_delivery():
 
     lista_vendas = []
     for venda in vendas_delivery:
+        # Usa o método to_dict do modelo Venda para obter todos os detalhes
+        venda_dict = venda.to_dict()
+        
+        # Formata a data_hora no fuso horário de São Paulo para exibir corretamente
+        data_hora_sp = venda.data_hora.astimezone(fuso_horario_sp)
+        venda_dict['data_hora'] = data_hora_sp.isoformat()
+
+        # Ajusta os itens vendidos para incluir o nome do produto
         itens_vendidos = []
         for item_venda in venda.itens_vendidos:
             produto = ProdutoEstoque.query.get(item_venda.produto_id)
@@ -83,17 +127,8 @@ def relatorio_delivery():
                 'nome': produto.nome if produto else 'Produto Desconhecido',
                 'quantidade': item_venda.quantidade
             })
+        venda_dict['itens_vendidos'] = itens_vendidos
         
-        # Converte a data_hora para o fuso horário de São Paulo e formata como string
-        data_hora_sp = venda.data_hora.astimezone(fuso_horario_sp)
-        
-        lista_vendas.append({
-            'id': venda.id,
-            'valor_total': venda.valor_total,
-            'data_hora': data_hora_sp.isoformat(),
-            'forma_pagamento': venda.forma_pagamento,
-            'itens_vendidos': itens_vendidos,
-            'plataforma': venda.plataforma
-        })
+        lista_vendas.append(venda_dict)
         
     return jsonify({'vendas': lista_vendas})

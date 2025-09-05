@@ -176,6 +176,11 @@ async function carregarHistoricoVendasDiarias() {
         if (result.vendas && result.vendas.length > 0) {
             result.vendas.forEach(venda => {
                 const li = document.createElement('li');
+                // Aplica a classe 'cancelada' se o status for 'cancelada'
+                if (venda.status === 'cancelada') {
+                    li.classList.add('cancelada');
+                }
+                
                 const valorTotal = venda.valor_total.toFixed(2);
                 const dataHora = new Date(venda.data_hora);
                 const hora = dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -187,17 +192,29 @@ async function carregarHistoricoVendasDiarias() {
                 });
                 itensVendaHTML += `</ul>`;
 
+                let observacaoCancelamentoHTML = '';
+                if (venda.status === 'cancelada' && venda.observacao_cancelamento) {
+                    observacaoCancelamentoHTML = `<span class="observacao-cancelamento">(${venda.observacao_cancelamento})</span>`;
+                }
+
+                const cancelarButtonDisabled = venda.status === 'cancelada' ? 'disabled' : '';
+
                 li.innerHTML = `
                     <div class="venda-resumo">
-                        <strong>[${hora}]</strong> Venda #${venda.id} - R$ ${valorTotal}
-                        <button class="btn-detalhes">+ Detalhes</button>
-                        <button class="btn-cancelar" data-venda-id="${venda.id}">Cancelar Venda</button>
+                        <strong>[${hora}]</strong> Venda #${venda.id} - R$ ${valorTotal} ${observacaoCancelamentoHTML}
+                        <div class="venda-acoes">
+                            <button class="btn-detalhes">+ Detalhes</button>
+                            <button class="btn-cancelar" data-venda-id="${venda.id}" ${cancelarButtonDisabled}>Cancelar Venda</button>
+                        </div>
                     </div>
                     ${itensVendaHTML}
                 `;
                 historicoVendasDiariasUl.appendChild(li);
                 
-                totalDiario += venda.valor_total;
+                // Somente soma ao total de vendas diárias se a venda não estiver cancelada
+                if (venda.status !== 'cancelada') {
+                    totalDiario += venda.valor_total;
+                }
             });
 
             // Adiciona o evento de clique aos botões de detalhes
@@ -216,10 +233,12 @@ async function carregarHistoricoVendasDiarias() {
 
             // Adiciona o evento de clique aos botões de cancelar
             document.querySelectorAll('.btn-cancelar').forEach(btn => {
-                btn.addEventListener('click', (event) => {
-                    const vendaId = event.target.dataset.venda-id;
-                    abrirModalSenha(vendaId);
-                });
+                if (!btn.disabled) { // Apenas adiciona o listener se o botão não estiver desabilitado
+                    btn.addEventListener('click', (event) => {
+                        const vendaId = event.target.dataset.vendaId;
+                        abrirModalSenha(vendaId);
+                    });
+                }
             });
 
         } else {
@@ -293,205 +312,3 @@ function abrirModalSenha(vendaId) {
         const senhaMestre = senhaInput.value;
         if (senhaMestre) {
             fecharModalSenha();
-            try {
-                const response = await fetch(`${API_URL}/vendas/cancelar/${vendaId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ senha_mestre: senhaMestre })
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    alert(result.mensagem);
-                    carregarHistoricoVendasDiarias();
-                } else {
-                    alert(`Erro ao cancelar a venda: ${result.erro}`);
-                }
-            } catch (error) {
-                alert('Erro de comunicação com a API.');
-                console.error('Erro:', error);
-            }
-        } else {
-            alert('Por favor, digite a senha mestre.');
-        }
-    });
-}
-
-function fecharModalSenha() {
-    modalSenha.style.display = 'none';
-}
-
-fecharModalBtn.addEventListener('click', fecharModalSenha);
-
-// Funções de Estoque
-// ---
-
-async function visualizarEstoque() {
-    try {
-        const response = await fetch(`${API_URL}/estoque`);
-        const result = await response.json();
-        const estoque = result.estoque;
-
-        let tabelaHTML = '<table><thead><tr><th>ID</th><th>Nome</th><th>Valor</th><th>Quantidade</th><th>Ações</th></tr></thead><tbody>';
-        estoque.forEach(item => {
-            const rowClass = item.alerta_reposicao ? 'class="alerta-linha"' : '';
-            tabelaHTML += `<tr ${rowClass}>
-                <td>${item.id}</td>
-                <td>${item.nome}</td>
-                <td>R$ ${item.valor.toFixed(2)}</td>
-                <td class="${item.alerta_reposicao ? 'alerta' : ''}">${item.quantidade}</td>
-                <td><button class="btn-secondary btn-editar" data-id="${item.id}">Editar</button></td>
-            </tr>`;
-        });
-        tabelaHTML += '</tbody></table>';
-
-        tabelaEstoqueDiv.innerHTML = tabelaHTML;
-
-        document.querySelectorAll('.btn-editar').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const produtoId = btn.dataset.id;
-                preencherFormularioParaEdicao(produtoId);
-            });
-        });
-
-    } catch (error) {
-        alert('Erro ao carregar estoque.');
-        console.error('Erro:', error);
-    }
-}
-
-async function preencherFormularioParaEdicao(produtoId) {
-    try {
-        const response = await fetch(`${API_URL}/estoque`);
-        const result = await response.json();
-        const produto = result.estoque.find(p => p.id === produtoId);
-
-        if (produto) {
-            formIdInput.value = produto.id;
-            formNomeInput.value = produto.nome;
-            formValorInput.value = produto.valor;
-            formQuantidadeInput.value = produto.quantidade;
-            formIdInput.disabled = true;
-            alert('Formulário preenchido! Altere os dados e clique em Salvar para atualizar.');
-        }
-    } catch (error) {
-        alert('Erro ao buscar dados do produto para edição.');
-        console.error('Erro:', error);
-    }
-}
-
-async function handleSubmitEstoque(event) {
-    event.preventDefault();
-
-    const produtoData = {
-        id: formIdInput.value,
-        nome: formNomeInput.value,
-        valor: parseFloat(formValorInput.value),
-        quantidade: parseInt(formQuantidadeInput.value)
-    };
-
-    try {
-        const response = await fetch(`${API_URL}/estoque/produto`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(produtoData)
-        });
-
-        const result = await response.json();
-
-        if (response.ok) {
-            alert(`Sucesso: ${result.mensagem}`);
-            estoqueForm.reset();
-            formIdInput.disabled = false;
-            visualizarEstoque();
-        } else {
-            alert(`Erro: ${result.erro}`);
-        }
-    } catch (error) {
-        alert('Erro de comunicação com a API.');
-        console.error('Erro:', error);
-    }
-}
-
-async function verAlertas() {
-    try {
-        const response = await fetch(`${API_URL}/estoque/alerta`);
-        const result = await response.json();
-        
-        if (response.ok) {
-            if (result.produtos) {
-                let listaAlerta = '<h3>Produtos com Estoque Baixo</h3><ul>';
-                result.produtos.forEach(p => {
-                    listaAlerta += `<li class="alerta">${p.nome} - Qtd: ${p.quantidade_atual}</li>`;
-                });
-                listaAlerta += '</ul>';
-                alertaInfoDiv.innerHTML = listaAlerta;
-            } else {
-                alertaInfoDiv.innerHTML = `<p>${result.mensagem}</p>`;
-            }
-            alertaInfoDiv.style.display = 'block';
-        } else {
-            alert(`Erro ao buscar alertas: ${result.erro}`);
-        }
-
-    } catch (error) {
-        alert('Erro de comunicação com a API.');
-        console.error('Erro:', error);
-    }
-}
-
-// Funções de Relatórios
-// ---
-
-async function gerarRelatorio(tipo) {
-    try {
-        const response = await fetch(`${API_URL}/relatorios/${tipo}`);
-        const result = await response.json();
-
-        if (response.ok) {
-            relatorioOutputDiv.innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
-        } else {
-            alert(`Erro ao gerar relatório: ${result.erro}`);
-        }
-    } catch (error) {
-        alert('Erro ao buscar relatórios.');
-        console.error('Erro:', error);
-    }
-}
-
-// Adicionar Event Listeners
-// ---
-adicionarProdutoBtn.addEventListener('click', adicionarAoCarrinho);
-finalizarVendaBtn.addEventListener('click', finalizarVenda);
-produtoIdInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
-        event.preventDefault();
-        adicionarAoCarrinho();
-    }
-});
-formaPagamentoSelect.addEventListener('change', () => {
-    valorRecebidoInput.style.display = formaPagamentoSelect.value === 'Dinheiro' ? 'block' : 'none';
-    calcularTroco();
-});
-valorRecebidoInput.addEventListener('input', calcularTroco);
-estoqueForm.addEventListener('submit', handleSubmitEstoque);
-document.getElementById('visualizar-estoque').addEventListener('click', visualizarEstoque);
-document.getElementById('alerta-estoque').addEventListener('click', verAlertas);
-document.getElementById('relatorio-diario').addEventListener('click', () => gerarRelatorio('diario'));
-document.getElementById('relatorio-mensal').addEventListener('click', () => gerarRelatorio('mensal'));
-document.getElementById('relatorio-geral').addEventListener('click', () => gerarRelatorio('geral'));
-document.getElementById('relatorio-delivery').addEventListener('click', () => gerarRelatorio('delivery'));
-lancarSaidaDeliveryBtn.addEventListener('click', lancarSaidaDelivery);
-produtoIdDeliveryInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
-        event.preventDefault();
-        lancarSaidaDelivery();
-    }
-});
-
-// Carrega as tabelas de estoque e histórico de vendas ao iniciar a página
-document.addEventListener('DOMContentLoaded', () => {
-    visualizarEstoque();
-    carregarHistoricoVendasDiarias();
-});

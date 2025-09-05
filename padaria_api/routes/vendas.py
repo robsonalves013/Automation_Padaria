@@ -5,6 +5,9 @@ import pytz
 
 vendas_bp = Blueprint('vendas_bp', __name__)
 
+# Fuso horário de São Paulo
+fuso_horario_sp = pytz.timezone('America/Sao_Paulo')
+
 @vendas_bp.route('/vendas/balcao', methods=['POST'])
 def finalizar_venda_balcao():
     """
@@ -28,8 +31,6 @@ def finalizar_venda_balcao():
         valor_total += produto.valor * item['quantidade']
 
     try:
-        # Define o fuso horário de São Paulo
-        fuso_horario_sp = pytz.timezone('America/Sao_Paulo')
         agora = datetime.now(fuso_horario_sp)
 
         nova_venda = Venda(
@@ -38,7 +39,8 @@ def finalizar_venda_balcao():
             valor_recebido=valor_recebido,
             data_hora=agora,
             tipo_venda='balcao',
-            plataforma=None
+            plataforma=None,
+            status='concluida' # Define o status inicial como concluida
         )
         db.session.add(nova_venda)
         db.session.flush()
@@ -64,7 +66,8 @@ def finalizar_venda_balcao():
 @vendas_bp.route('/vendas/cancelar/<int:venda_id>', methods=['POST'])
 def cancelar_venda(venda_id):
     """
-    Cancela uma venda pelo seu ID, revertendo a quantidade de estoque.
+    Cancela uma venda pelo seu ID, revertendo a quantidade de estoque e
+    atualizando o status da venda para 'cancelada'.
     Requer a senha mestre.
     """
     from config import Config
@@ -78,22 +81,21 @@ def cancelar_venda(venda_id):
     venda = Venda.query.get(venda_id)
     if not venda:
         return jsonify({'erro': 'Venda não encontrada.'}), 404
+    
+    if venda.status == 'cancelada':
+        return jsonify({'mensagem': 'Esta venda já está cancelada.'}), 200
 
     try:
-        # 1. Reverter o estoque para cada item da venda
+        # Reverter o estoque para cada item da venda
         for item_venda in venda.itens_vendidos:
             produto = ProdutoEstoque.query.get(item_venda.produto_id)
             if produto:
                 produto.quantidade += item_venda.quantidade
 
-        # 2. Deletar os itens da venda
-        for item_venda in venda.itens_vendidos:
-            db.session.delete(item_venda)
-
-        # 3. Deletar a venda
-        db.session.delete(venda)
-
-        # 4. Comitar a transação
+        # Atualizar o status da venda para 'cancelada'
+        venda.status = 'cancelada'
+        venda.observacao_cancelamento = f"Cancelada em {datetime.now(fuso_horario_sp).strftime('%d/%m/%Y %H:%M')}"
+        
         db.session.commit()
 
         return jsonify({'mensagem': f'Venda #{venda_id} cancelada com sucesso! Estoque revertido.'}), 200
