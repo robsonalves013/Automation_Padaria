@@ -35,6 +35,9 @@ const DOM = {
     relatorioMensalBtn: document.getElementById('relatorio-mensal'),
     relatorioGeralBtn: document.getElementById('relatorio-geral'),
     relatorioDeliveryBtn: document.getElementById('relatorio-delivery'),
+    emailFormDiv: document.getElementById('email-form'),
+    emailInput: document.getElementById('email-input'),
+    enviarEmailBtn: document.getElementById('enviar-email-btn'),
 
     // Histórico de Vendas
     historicoVendasDiariasUl: document.getElementById('historico-vendas-diarias'),
@@ -52,6 +55,7 @@ const DOM = {
 
 let carrinho = [];
 let vendaParaCancelarId = null;
+let tipoRelatorioAtual = null;
 
 // Funções Utilitárias
 function showToast(message, isSuccess = true) {
@@ -320,7 +324,7 @@ async function lancarSaidaDelivery() {
         DOM.produtoIdDeliveryInput.value = '';
         DOM.produtoQuantidadeDeliveryInput.value = 1;
         visualizarEstoque();
-        carregarHistoricoVendasDiarias(); // NOVO: Atualiza o painel de histórico
+        carregarHistoricoVendasDiarias();
     } catch (error) {
         // O erro já é tratado na função fetchData
     }
@@ -384,6 +388,8 @@ async function carregarHistoricoVendasDiarias() {
         }
 
         DOM.valorFechamentoCaixaSpan.textContent = totalDiario.toFixed(2);
+        DOM.emailFormDiv.style.display = 'block';
+        tipoRelatorioAtual = 'diario';
     } catch (error) {
         DOM.historicoVendasDiariasUl.innerHTML = `<li class="erro">Erro ao carregar o histórico.</li>`;
         DOM.valorFechamentoCaixaSpan.textContent = '0.00';
@@ -395,6 +401,7 @@ async function gerarRelatorio(endpoint, titulo) {
         const result = await fetchData(`/relatorios/${endpoint}`);
         if (!result.vendas || result.vendas.length === 0) {
             DOM.relatorioOutputDiv.innerHTML = `<p class="message-info">${result.mensagem}</p>`;
+            DOM.emailFormDiv.style.display = 'none';
             return;
         }
 
@@ -431,8 +438,36 @@ async function gerarRelatorio(endpoint, titulo) {
             </table>
         `;
         DOM.relatorioOutputDiv.innerHTML = html;
+        DOM.emailFormDiv.style.display = 'block';
+        tipoRelatorioAtual = endpoint;
     } catch (error) {
         DOM.relatorioOutputDiv.innerHTML = `<p class="erro">Erro ao gerar o relatório.</p>`;
+        DOM.emailFormDiv.style.display = 'none';
+    }
+}
+
+async function enviarRelatorioPorEmail() {
+    const email = DOM.emailInput.value.trim();
+    if (!email) {
+        showToast('Por favor, digite um endereço de e-mail.', false);
+        return;
+    }
+    
+    if (!tipoRelatorioAtual) {
+        showToast('Por favor, gere um relatório antes de enviá-lo por e-mail.', false);
+        return;
+    }
+
+    try {
+        await fetchData('/relatorios/enviar-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, tipo_relatorio: tipoRelatorioAtual })
+        });
+        showToast('Relatório enviado com sucesso!');
+        DOM.emailInput.value = '';
+    } catch (error) {
+        // O erro já é tratado na função fetchData
     }
 }
 
@@ -484,6 +519,7 @@ DOM.relatorioDiarioBtn.addEventListener('click', () => carregarHistoricoVendasDi
 DOM.relatorioMensalBtn.addEventListener('click', () => gerarRelatorio('mensal', 'Relatório de Vendas Mensais'));
 DOM.relatorioGeralBtn.addEventListener('click', () => gerarRelatorio('geral', 'Relatório de Vendas Geral'));
 DOM.relatorioDeliveryBtn.addEventListener('click', () => gerarRelatorio('delivery', 'Relatório de Vendas Delivery'));
+DOM.enviarEmailBtn.addEventListener('click', enviarRelatorioPorEmail);
 DOM.formaPagamentoSelect.addEventListener('change', () => {
     DOM.valorRecebidoInput.style.display = DOM.formaPagamentoSelect.value === 'Dinheiro' ? 'block' : 'none';
     calcularTroco();

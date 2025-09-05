@@ -2,6 +2,10 @@ from flask import Blueprint, jsonify, request
 from models import db, Venda, VendaItem, ProdutoEstoque
 from datetime import datetime
 import pytz
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from config import Config
 
 vendas_bp = Blueprint('vendas_bp', __name__)
 
@@ -40,7 +44,7 @@ def finalizar_venda_balcao():
             data_hora=agora,
             tipo_venda='balcao',
             plataforma=None,
-            status='concluida' # Define o status inicial como concluida
+            status='concluida'
         )
         db.session.add(nova_venda)
         db.session.flush()
@@ -62,6 +66,7 @@ def finalizar_venda_balcao():
     except Exception as e:
         db.session.rollback()
         return jsonify({'erro': str(e)}), 500
+
 
 @vendas_bp.route('/vendas/delivery', methods=['POST'])
 def lancar_venda_delivery():
@@ -159,3 +164,62 @@ def cancelar_venda(venda_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'erro': 'Erro ao cancelar a venda. ' + str(e)}), 500
+
+@vendas_bp.route('/relatorios/enviar-email', methods=['POST'])
+def enviar_relatorio_email():
+    """
+    Envia um relatório por e-mail.
+    """
+    data = request.get_json()
+    email_destinatario = data.get('email')
+    tipo_relatorio = data.get('tipo_relatorio')
+
+    if not email_destinatario or not tipo_relatorio:
+        return jsonify({'erro': 'Dados insuficientes.'}), 400
+
+    # Lógica para obter os dados do relatório com base no tipo
+    # Reutilize as funções que já geram os relatórios
+    if tipo_relatorio == 'diario':
+        from .relatorios import vendas_diarias
+        relatorio_data = vendas_diarias()
+        assunto = 'Relatório Diário de Vendas'
+    elif tipo_relatorio == 'mensal':
+        from .relatorios import vendas_mensais
+        relatorio_data = vendas_mensais()
+        assunto = 'Relatório Mensal de Vendas'
+    elif tipo_relatorio == 'geral':
+        from .relatorios import vendas_gerais
+        relatorio_data = vendas_gerais()
+        assunto = 'Relatório Geral de Vendas'
+    elif tipo_relatorio == 'delivery':
+        from .relatorios import vendas_delivery
+        relatorio_data = vendas_delivery()
+        assunto = 'Relatório de Vendas Delivery'
+    else:
+        return jsonify({'erro': 'Tipo de relatório inválido.'}), 400
+
+    # Converte os dados do relatório em uma string HTML ou texto
+    corpo_email = "<h2>Relatório de Vendas</h2>"
+    for venda in relatorio_data['vendas']:
+        corpo_email += f"<p>Data/Hora: {venda['data_hora']}, Valor: R$ {venda['valor_total']}, Tipo: {venda['tipo_venda']}</p>"
+
+    # Lógica para enviar o e-mail
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = Config.EMAIL_HOST_USER
+        msg['To'] = email_destinatario
+        msg['Subject'] = assunto
+        
+        msg.attach(MIMEText(corpo_email, 'html'))
+
+        server = smtplib.SMTP(Config.EMAIL_HOST, Config.EMAIL_PORT)
+        server.starttls()
+        server.login(Config.EMAIL_HOST_USER, Config.EMAIL_HOST_PASSWORD)
+        text = msg.as_string()
+        server.sendmail(Config.EMAIL_HOST_USER, email_destinatario, text)
+        server.quit()
+
+        return jsonify({'mensagem': 'Relatório enviado com sucesso!'}), 200
+
+    except Exception as e:
+        return jsonify({'erro': f'Erro ao enviar e-mail: {str(e)}'}), 500
