@@ -38,7 +38,7 @@ header {
 .logo {
     max-height: 200px; /* Ajuste o tamanho do seu logo aqui */
     width: auto;
-    border-radius: 50%; /* Se você quiser um logo circular */
+    border-radius: 200%; /* Se você quiser um logo circular */
     border: 2px solid var(--background-white);
 }
 
@@ -268,6 +268,29 @@ pre {
     main {
         margin: 20px auto;
         padding: 1.5rem;
+    }
+    .venda-resumo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    }
+    .btn-detalhes {
+        background-color: transparent;
+        border: none;
+        color: var(--secondary-brown);
+        cursor: pointer;
+        font-weight: bold;
+        padding: 5px;
+    }
+    .btn-detalhes:hover {
+        text-decoration: underline;
+    }
+    .detalhes-venda-lista {
+        list-style-type: none;
+        padding-left: 20px;
+        margin-top: 5px;
+        border-left: 2px solid var(--border-light);
     }
     .venda-container, .estoque-container, .relatorios-container {
         flex-direction: column;

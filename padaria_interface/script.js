@@ -173,13 +173,39 @@ async function carregarHistoricoVendasDiarias() {
                 const valorTotal = venda.valor_total.toFixed(2);
                 const hora = new Date(venda.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
                 
-                const itensVenda = venda.itens_vendidos.map(item => `${item.quantidade}x ${item.nome}`).join(', ');
+                // CRIA A LISTA DE ITENS OCULTA
+                let itensVendaHTML = `<ul style="display: none;" class="detalhes-venda-lista">`;
+                venda.itens_vendidos.forEach(item => {
+                    itensVendaHTML += `<li>${item.quantidade}x ${item.nome}</li>`;
+                });
+                itensVendaHTML += `</ul>`;
 
-                li.innerHTML = `<strong>[${hora}]</strong> Venda #${venda.id} - R$ ${valorTotal} <br> <em>Itens: ${itensVenda}</em>`;
+                li.innerHTML = `
+                    <div class="venda-resumo">
+                        <strong>[${hora}]</strong> Venda #${venda.id} - R$ ${valorTotal}
+                        <button class="btn-detalhes">+ Detalhes</button>
+                    </div>
+                    ${itensVendaHTML}
+                `;
                 historicoVendasDiariasUl.appendChild(li);
                 
                 totalDiario += venda.valor_total;
             });
+
+            // Adiciona o evento de clique aos botões de detalhes
+            document.querySelectorAll('.btn-detalhes').forEach(btn => {
+                btn.addEventListener('click', (event) => {
+                    const listaItens = event.target.closest('li').querySelector('.detalhes-venda-lista');
+                    if (listaItens.style.display === 'none') {
+                        listaItens.style.display = 'block';
+                        event.target.textContent = '- Fechar';
+                    } else {
+                        listaItens.style.display = 'none';
+                        event.target.textContent = '+ Detalhes';
+                    }
+                });
+            });
+
         } else {
             historicoVendasDiariasUl.innerHTML = '<li>Nenhuma venda registrada hoje.</li>';
         }

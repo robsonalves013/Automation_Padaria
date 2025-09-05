@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from models import db, Venda, VendaItem, ProdutoEstoque
 from datetime import datetime, date, timedelta
 
